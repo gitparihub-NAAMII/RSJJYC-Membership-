@@ -109,10 +109,12 @@ export function buildLedger(member, payments = [], waivers = [], now = new Date(
 }
 
 // ---------- card status (shared by dashboard + public QR page) ----------
-export function cardStatus({ expiryMs, periods, paidThrough }, now = new Date()) {
+export function cardStatus({ expiryMs, periods, paidThrough, inactive }, now = new Date()) {
   const daysLeft = Math.ceil((expiryMs - now.getTime()) / DAY);
   const cur = monthKey(now);
   const unpaidPast = periodMonths(periods).filter((m) => m < cur && (!paidThrough || m > paidThrough)).length;
+  // set by the admin when a payment receipt is rejected; cleared when a receipt is approved
+  if (inactive) return { code: 'inactive', label: 'INACTIVE', reason: 'Payment receipt rejected by admin — please pay again and upload a valid receipt.', daysLeft, unpaidPast };
   if (daysLeft <= 0) return { code: 'expired', label: 'EXPIRED', reason: 'Membership period has ended', daysLeft, unpaidPast };
   if (unpaidPast >= RULES.suspendAfterMissedMonths)
     return { code: 'expired', label: 'EXPIRED', reason: `Contribution unpaid for ${unpaidPast} months`, daysLeft, unpaidPast };

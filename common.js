@@ -82,4 +82,5 @@ export const cardData = (m, paidThrough) => ({
   fullName: m.fullName, memberNo: m.memberNo, memberType: m.memberType, photo: m.photo, dob: m.dob, bloodGroup: m.bloodGroup || '',
   joinMs: m.joinMs, expiryMs: m.expiryMs, periods: m.periods, cardToken: m.cardToken,
   paidThrough: paidThrough !== undefined ? paidThrough : m.paidThrough ?? null,
+  inactive: !!m.inactive,
 });

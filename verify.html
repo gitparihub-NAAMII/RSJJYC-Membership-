@@ -15,7 +15,7 @@
   <meta name="apple-mobile-web-app-title" content="RSJJYC">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Mukta:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=19">
+  <link rel="stylesheet" href="style.css?v=20">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
@@ -37,10 +37,11 @@
       app.innerHTML = `<div class="panel empty"><h2>❌ Card not found</h2><p>This QR code does not match any membership card of our club.</p></div>`;
     } else {
       const st = cardStatus(card);
-      const msg = st.code === 'expired' ? 'YOUR CARD IS EXPIRED — RENEW SOON' : st.code === 'expiring' ? 'MEMBERSHIP ABOUT TO EXPIRE' : 'MEMBERSHIP ACTIVE';
+      const msg = st.code === 'inactive' ? 'MEMBERSHIP INACTIVE' : st.code === 'expired' ? 'YOUR CARD IS EXPIRED — RENEW SOON' : st.code === 'expiring' ? 'MEMBERSHIP ABOUT TO EXPIRE' : 'MEMBERSHIP ACTIVE';
+      if (st.code === 'inactive') st.reason = 'This membership is currently not active';  // no payment details on the public page
       app.innerHTML = `
-        <div class="big-status ${st.code}">${st.code === 'active' ? '✅' : st.code === 'expiring' ? '⚠️' : '⛔'} <span>${msg}</span><small><span>${esc(st.reason)}</span> · <span>valid until</span> <span>${fmtDate(card.expiryMs)}</span></small></div>
-        <div id="card" class="${st.code === 'expired' ? 'flash-red' : ''}"></div>
+        <div class="big-status ${st.code === 'inactive' ? 'expired' : st.code}">${st.code === 'active' ? '✅' : st.code === 'expiring' ? '⚠️' : '⛔'} <span>${msg}</span><small><span>${esc(st.reason)}</span> · <span>valid until</span> <span>${fmtDate(card.expiryMs)}</span></small></div>
+        <div id="card" class="${['expired', 'inactive'].includes(st.code) ? 'flash-red' : ''}"></div>
         <p class="hint" style="text-align:center;margin-top:16px">Verified ${new Date().toLocaleString('en-GB')}</p>`;
       mountCard(app.querySelector('#card'), { ...card, cardToken: token });
     }

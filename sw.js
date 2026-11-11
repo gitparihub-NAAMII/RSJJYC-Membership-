@@ -1,7 +1,7 @@
 // Service worker for the installable app.
 // "Network first": always load the newest files from the internet, and only use
 // the saved copy when the phone is offline. Firebase / CDN requests are untouched.
-const CACHE = 'rsjjyc-v19';
+const CACHE = 'rsjjyc-v20';
 const CORE = ['index.html', 'member.html', 'admin.html', 'verify.html', 'pay-soon.html', 'install.html', 'style.css', 'logo.png', 'icon-192.png'];
 
 self.addEventListener('install', (e) => {

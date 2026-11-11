@@ -716,3 +716,7 @@ button, .btn, .app-choice, .tabs button, .chips button, .side-nav button, .stat.
   .modal .pay-qr-box { margin: 0 auto; }
   .modal .pay-total b { font-size: 19px; }
 }
+
+/* v13: INACTIVE status (admin rejected a payment receipt) */
+.st-inactive .mc-status { color: #fff; background: #dc2626; padding: 5px 14px; border-radius: 7px; box-shadow: 0 0 0 3px rgba(220,38,38,.35); }
+.pill.inactive { background: #dc2626; color: #fff; }

@@ -40,8 +40,11 @@ function welcome(m) {
 
 function render() {
   const renew = renewInfo();
-  const bannerIcon = { active: '✅', expiring: '⚠️', expired: '⛔' }[ST.code];
-  const bannerText = ST.code === 'expired'
+  const bannerIcon = { active: '✅', expiring: '⚠️', expired: '⛔', inactive: '⛔' }[ST.code];
+  const waitingCheck = payments.some((p) => p.status === 'approved' && p.reviewed === false);
+  const bannerText = ST.code === 'inactive'
+    ? `<span>Your membership is INACTIVE.</span> <span style="font-weight:400">(${waitingCheck ? 'Your new receipt is waiting for admin approval.' : esc(ST.reason)})</span>`
+    : ST.code === 'expired'
     ? `<span>Your card is EXPIRED — renew soon.</span> <span style="font-weight:400">(${esc(ST.reason)})</span>`
     : `<span>${ST.code === 'expiring' ? esc(ST.label) : 'Your membership is ACTIVE'}</span> — <span>${esc(ST.reason)}</span>`;
 
@@ -51,7 +54,7 @@ function render() {
         <div style="flex:1"><b>${esc(reminderText(due))}</b></div><button class="btn btn-sm ${due.overdue ? 'btn-red' : 'btn-amber'}" id="dueNow">Pay now</button></div>` : '';
 
   app.innerHTML = `
-    <div class="banner ${ST.code}"><span style="font-size:22px">${bannerIcon}</span><div><b>${bannerText}</b></div></div>
+    <div class="banner ${ST.code === 'inactive' ? 'expired' : ST.code}"><span style="font-size:22px">${bannerIcon}</span><div><b>${bannerText}</b></div></div>
     ${dueBanner}
     <h2 style="margin:0 0 14px">Namaste, ${esc(M.firstName)} 🙏</h2>
     <div class="stats">
@@ -66,7 +69,7 @@ function render() {
       <div>
         <div class="panel">
           <h3>My membership card</h3>
-          <div id="cardBox" class="${ST.code === 'expired' ? 'flash-red' : ''}"></div>
+          <div id="cardBox" class="${['expired', 'inactive'].includes(ST.code) ? 'flash-red' : ''}"></div>
           ${downloadButtons()}
           <p class="hint" style="margin-top:10px">QR link: <a href="${esc(verifyUrl(M.cardToken))}" target="_blank" rel="noopener">verify my card ↗</a></p>
         </div>

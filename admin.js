@@ -101,7 +101,7 @@ function overview() {
   const raised = approved.reduce((a, p) => a + p.amount, 0);
   const newToday = members.filter((m) => isoDate(m.joinMs) === today).length;
   const newThisMonth = members.filter((m) => monthKey(m.joinMs) === cm).length;
-  const cnt = (c) => members.filter((m) => m._S.code === c).length;
+  const cnt = (c) => members.filter((m) => m._S.code === c || (c === 'expired' && m._S.code === 'inactive')).length;
   const owing = members.filter((m) => m._L.outstanding > 0);
   const dues = owing.reduce((a, m) => a + m._L.outstanding, 0);
   const pend = payments.filter(needsReview).length + waivers.filter((w) => w.status === 'pending').length;
@@ -177,7 +177,7 @@ function overview() {
 }
 
 // ============================ MEMBERS ============================
-const CHIPS = [['all', 'All'], ['today', 'Registered today'], ['thismonth', 'This month'], ['new', 'New members (30 days)'], ['active', 'Active'], ['expiring', 'Expiring soon'], ['expired', 'Expired'], ['owing', 'Has dues'], ['clear', 'Paid-up']];
+const CHIPS = [['all', 'All'], ['today', 'Registered today'], ['thismonth', 'This month'], ['new', 'New members (30 days)'], ['active', 'Active'], ['expiring', 'Expiring soon'], ['expired', 'Expired'], ['inactive', 'Inactive (receipt rejected)'], ['owing', 'Has dues'], ['clear', 'Paid-up']];
 function filtered() {
   const now = Date.now(), today = isoDate(new Date()), cm = monthKey(new Date());
   return members.filter((m) => {
@@ -190,7 +190,8 @@ function filtered() {
       case 'today': return isoDate(m.joinMs) === today;
       case 'thismonth': return monthKey(m.joinMs) === cm;
       case 'new': return now - m.joinMs <= 30 * DAY;
-      case 'active': case 'expiring': case 'expired': return m._S.code === filt.chip;
+      case 'active': case 'expiring': case 'inactive': return m._S.code === filt.chip;
+      case 'expired': return m._S.code === 'expired' || m._S.code === 'inactive';
       case 'owing': return m._L.outstanding > 0;
       case 'clear': return !m._L.outstanding;
       default: return true;
@@ -480,7 +481,8 @@ function approvals() {
     try {
       await (kind === 'waiver' ? store.updateWaiver(id, patch) : store.updatePayment(id, patch));
       Object.assign(rec, patch);
-      await syncPublic(rec.uid);
+      // payment receipt rejected -> card INACTIVE; receipt approved -> card ACTIVE again
+      await syncPublic(rec.uid, kind === 'payment' ? { inactive: act === 'rejected' } : {});
       toast(`${kind === 'waiver' ? 'Waiver' : 'Payment'} ${act}.`, act === 'approved' ? 'success' : 'info');
       load();
     } catch (e) { toast(friendlyError(e), 'error'); }
@@ -488,12 +490,13 @@ function approvals() {
 }
 
 /** Recompute paid-through month and push it to the member + public QR card */
-async function syncPublic(uid) {
+async function syncPublic(uid, extra = {}) {
   const m = members.find((x) => x.uid === uid); if (!m) return;
+  Object.assign(m, extra);
   enrich(m);
-  const pt = m._L.paidThrough;
-  await store.updateMember(uid, { paidThrough: pt });
-  await store.updatePublicCard(m.cardToken, { paidThrough: pt });
+  const patch = { paidThrough: m._L.paidThrough, ...extra };
+  await store.updateMember(uid, patch);
+  await store.updatePublicCard(m.cardToken, patch);
 }
 
 // ============================ PAYMENTS ============================
