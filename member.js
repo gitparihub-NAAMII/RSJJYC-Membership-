@@ -3,6 +3,7 @@ import { friendlyError } from './store.js';
 import { initPage, cardData } from './common.js';
 import { mountCard, downloadButtons, wireDownloads, verifyUrl } from './card.js';
 import { renderProfileForm } from './profile.js';
+import { nextDue, reminderText, syncReminders, enableNotifications, notifyState, downloadCalendar } from './reminders.js';
 import { buildLedger, cardStatus, esc, npr, fmtDate, modal, toast, monthKey, addMonths, addYears, STATUS_TEXT, readReceipt, showReceipt } from './utils.js';
 
 const store = await initPage();
@@ -44,8 +45,14 @@ function render() {
     ? `<span>Your card is EXPIRED — renew soon.</span> <span style="font-weight:400">(${esc(ST.reason)})</span>`
     : `<span>${ST.code === 'expiring' ? esc(ST.label) : 'Your membership is ACTIVE'}</span> — <span>${esc(ST.reason)}</span>`;
 
+  const due = nextDue(M, L);
+  const dueBanner = due && due.daysLeft <= 7
+    ? `<div class="banner due-banner ${due.overdue ? 'expired' : 'expiring'}"><span style="font-size:22px">${due.overdue ? '⏰' : '🔔'}</span>
+        <div style="flex:1"><b>${esc(reminderText(due))}</b></div><button class="btn btn-sm ${due.overdue ? 'btn-red' : 'btn-amber'}" id="dueNow">Pay now</button></div>` : '';
+
   app.innerHTML = `
     <div class="banner ${ST.code}"><span style="font-size:22px">${bannerIcon}</span><div><b>${bannerText}</b></div></div>
+    ${dueBanner}
     <h2 style="margin:0 0 14px">Namaste, ${esc(M.firstName)} 🙏</h2>
     <div class="stats">
       <div class="stat ${ST.daysLeft <= RULES.expiringSoonDays ? (ST.daysLeft <= 0 ? 'red' : 'amber') : 'green'}"><span>Days until expiry</span><b>${Math.max(ST.daysLeft, 0)}</b><small>Valid until ${fmtDate(M.expiryMs)}</small></div>
@@ -67,6 +74,14 @@ function render() {
           <h3>🔄 Renew membership</h3>
           <p class="hint" style="margin-top:-6px">${esc(renew.msg)}</p>
           <button class="btn btn-primary btn-block" id="renewBtn" ${renew.ok ? '' : 'disabled'}>Renew for 1 more year</button>
+        </div>
+        <div class="panel" id="remindPanel">
+          <h3>🔔 Payment reminders</h3>
+          <p class="hint" style="margin-top:-6px">${due ? `Next payment: <b>${npr(due.amount)}</b> for ${esc(due.label)}, due on <b>${fmtDate(due.due)}</b>.` : 'Nothing left to pay this term. ✔'}</p>
+          <p class="hint">We remind you <b>7, 5 and 3 days</b> before each due date, and every day while a payment is overdue, until it is paid.</p>
+          <div class="remind-row"><span id="notifState"></span><button class="btn btn-sm" id="notifBtn">Turn on phone notifications</button></div>
+          <button class="btn btn-sm btn-ghost btn-block" id="calBtn" style="margin-top:10px" ${due ? '' : 'disabled'}>📅 Add reminders to my phone calendar</button>
+          <p class="hint" style="margin-top:8px">Calendar alarms work even when the app is closed. Notifications also appear when you open the app.</p>
         </div>
         <div class="panel">
           <h3>My details</h3>
@@ -120,6 +135,29 @@ function render() {
   app.querySelector('#payBtn').onclick = payDialog;
   app.querySelector('#waiveBtn').onclick = waiverDialog;
   app.querySelector('#renewBtn').onclick = doRenew;
+
+  // ---- reminders ----
+  app.querySelector('#dueNow')?.addEventListener('click', payDialog);
+  const ns = app.querySelector('#notifState'), nb = app.querySelector('#notifBtn');
+  const showNotif = () => {
+    const s = notifyState();
+    ns.className = 'pill ' + (s === 'granted' ? 'paid' : s === 'denied' ? 'rejected' : 'pending');
+    ns.textContent = s === 'granted' ? 'Notifications ON' : s === 'denied' ? 'Notifications blocked' : s === 'unsupported' ? 'Not supported here' : 'Notifications OFF';
+    nb.hidden = s === 'granted' || s === 'unsupported';
+    if (s === 'denied') { nb.hidden = false; nb.textContent = 'How to allow'; }
+  };
+  nb.onclick = async () => {
+    if (notifyState() === 'denied') return toast('Notifications are blocked. Open your phone Settings → Apps → Chrome (or RSJJYC) → Notifications, allow them, then reopen the app.', 'info');
+    const r = await enableNotifications();
+    showNotif();
+    if (r === 'granted') { toast('Reminders turned on.', 'success'); syncReminders(due); }
+  };
+  showNotif();
+  app.querySelector('#calBtn').onclick = () => {
+    const n = downloadCalendar(M, L);
+    toast(n ? `Calendar file saved with ${n} due date(s). Open it to add the reminders to your calendar.` : 'Nothing left to pay this term.', n ? 'success' : 'info');
+  };
+  syncReminders(due);
   app.querySelectorAll('[data-receipt]').forEach((b) => (b.onclick = async () => showReceipt(await store.getReceipt(b.dataset.receipt))));
 }
 

@@ -6,6 +6,7 @@
   <title>Royal Star Jan Jyoti Youth Club — Membership</title>
   <meta name="description" content="Become a member of Royal Star Jan Jyoti Youth Club (Estd. 1979) and get your digital membership card.">
   <script>try{var d=document.documentElement,t=localStorage.getItem('theme');d.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');if(localStorage.getItem('lang')==='ne'){d.lang='ne';d.classList.add('i18n-pending');setTimeout(function(){d.classList.remove('i18n-pending')},2500)}}catch(e){}</script>
+  <script>try{var D=document.documentElement,Q=new URLSearchParams(location.search),A=matchMedia("(display-mode: standalone)").matches||navigator.standalone||Q.get("source")==="app"||Q.get("app")==="1"||sessionStorage.getItem("appMode")==="1";if(A){sessionStorage.setItem("appMode","1");D.classList.add("app-mode");if(!sessionStorage.getItem("splashShown"))D.classList.add("app-splash");}}catch(e){}</script>
   <link rel="icon" href="logo.png">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#0b2c5f">
@@ -15,7 +16,7 @@
   <meta name="apple-mobile-web-app-title" content="RSJJYC">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Mukta:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=9">
+  <link rel="stylesheet" href="style.css?v=12">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
@@ -25,6 +26,27 @@
     <span id="modePill" class="demo-pill" hidden>DEMO MODE</span>
     <a id="continueBtn" class="btn btn-sm btn-ghost" href="member.html" hidden>My dashboard →</a>
   </div></div>
+
+  <!-- ============ APP MODE (installed app): splash + home screen ============ -->
+  <div class="splash" id="splash" aria-hidden="true">
+    <div class="splash-mark"><div class="splash-rings"><i></i><i></i><i></i></div><div class="splash-flash"></div><img class="splash-logo" src="logo.png" alt=""></div>
+    <div class="splash-text"><b>Royal Star Jan Jyoti Youth Club</b><small>Estd. 1979</small></div>
+  </div>
+  <section class="app-home" id="appHome">
+    <img class="app-bg-logo" src="logo.png" alt="">
+    <div class="app-home-in">
+      <img class="app-logo" src="logo.png" alt="">
+      <h1>Royal Star Jan Jyoti Youth Club</h1>
+      <p class="app-tag" id="appHook">Be part of a greater youth community serving since 1979.</p>
+      <div class="app-choices">
+        <a class="app-choice primary" id="appDash" href="member.html" hidden><span class="ic">🏠</span><span><b>My dashboard</b><small>You are logged in</small></span><span class="go">›</span></a>
+        <button class="app-choice primary" data-open="register"><span class="ic">📝</span><span><b>New Member Register</b><small>Create your account and join the club</small></span><span class="go">›</span></button>
+        <button class="app-choice" data-open="login"><span class="ic">👤</span><span><b>Member Log In</b><small>Your card, payments and dues</small></span><span class="go">›</span></button>
+        <button class="app-choice" data-open="admin"><span class="ic">🛡️</span><span><b>Admin Log In</b><small>For club administrators</small></span><span class="go">›</span></button>
+      </div>
+      <p class="app-foot">Estd. 1979 · Serving the community</p>
+    </div>
+  </section>
 
   <section class="hero">
     <img class="hero-logo org-logo" src="logo.png" alt="">
@@ -59,6 +81,8 @@
     </nav>
 
     <!-- ===================== REGISTER (account only) ===================== -->
+    <button type="button" class="btn btn-ghost app-back" id="appBack">← Back</button>
+
     <section id="tab-register" class="panel narrow" hidden>
       <h2>Create your member account</h2>
       <p class="sub">Step 1 of 2: set up your username and password. After that you will fill in your membership details inside your own member dashboard.</p>
@@ -103,6 +127,6 @@
     </section>
   </div>
   <footer class="site">© <span class="org-full">Royal Star Jan Jyoti Youth Club</span> · Estd. 1979</footer>
-  <script type="module" src="home.js?v=9"></script>
+  <script type="module" src="home.js?v=12"></script>
 </body>
 </html>

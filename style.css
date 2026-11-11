@@ -508,3 +508,102 @@ img, canvas { max-width: 100%; }
 .install-btn:hover { filter: brightness(1.05); }
 /* inside the installed app: respect the phone's notch / status bar */
 @media (display-mode: standalone) { .topbar { padding-top: env(safe-area-inset-top); } footer.site { padding-bottom: calc(20px + env(safe-area-inset-bottom)); } }
+
+/* =====================================================================
+   v7: installed-app mode — lion splash + app home screen
+   (only when opened as the installed app; the website is unchanged)
+   ===================================================================== */
+.splash, .app-home, .app-back { display: none; }
+.app-mode .hero, .app-mode .tabs, .app-mode #continueBtn, .app-mode footer.site { display: none !important; }
+.app-mode .app-home { display: flex; }
+.app-mode.app-screen .app-home { display: none; }
+.app-mode.app-screen .app-back { display: inline-flex; margin: 0 0 14px; }
+.app-mode .wrap { padding-top: 18px; }
+.app-mode:not(.app-screen) .wrap { padding: 0; }
+
+/* ---------- splash ---------- */
+.app-mode.app-splash .splash { display: flex; }
+.app-mode.app-splash body { overflow: hidden; }
+.splash { position: fixed; inset: 0; z-index: 1000; flex-direction: column; align-items: center; justify-content: center; gap: 26px; color: #fff;
+  background: radial-gradient(circle at 50% 42%, #16468c 0%, #0b2c5f 38%, #071d40 75%); transition: opacity .6s ease, transform .6s ease; }
+.splash.out { opacity: 0; transform: scale(1.12); pointer-events: none; }
+.splash-mark { position: relative; width: 168px; height: 168px; }
+.splash-logo { position: relative; z-index: 3; width: 168px; height: 168px; border-radius: 50%; background: #fff; object-fit: cover;
+  box-shadow: 0 0 0 6px rgba(245,179,1,.55), 0 24px 60px rgba(0,0,0,.55); animation: roarIn 1.7s cubic-bezier(.2,.9,.25,1) both; }
+@keyframes roarIn {
+  0% { transform: scale(.15) rotate(-30deg); opacity: 0; }
+  40% { transform: scale(1.18) rotate(5deg); opacity: 1; }
+  50% { transform: scale(1.06) rotate(-6deg); }
+  58% { transform: scale(1.14) rotate(5deg); }
+  66% { transform: scale(1.07) rotate(-4deg); }
+  74% { transform: scale(1.11) rotate(2deg); }
+  84% { transform: scale(1.03) rotate(-1deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+.splash-flash { position: absolute; z-index: 2; inset: -40%; border-radius: 50%;
+  background: radial-gradient(circle, rgba(245,179,1,.75) 0%, rgba(200,16,46,.35) 35%, transparent 65%); opacity: 0; animation: roarFlash 1.2s ease-out .55s both; }
+@keyframes roarFlash { 0% { opacity: 0; transform: scale(.4); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(1.4); } }
+.splash-rings { position: absolute; inset: 0; z-index: 1; }
+.splash-rings i { position: absolute; inset: 0; border-radius: 50%; border: 3px solid var(--gold); opacity: 0; animation: roarRing 1.5s ease-out infinite; }
+.splash-rings i:nth-child(1) { animation-delay: .6s; } .splash-rings i:nth-child(2) { animation-delay: 1s; } .splash-rings i:nth-child(3) { animation-delay: 1.4s; }
+@keyframes roarRing { 0% { transform: scale(1); opacity: .85; } 100% { transform: scale(2.7); opacity: 0; } }
+.splash-text { text-align: center; padding: 0 20px; animation: appFadeUp .8s ease .95s both; }
+.splash-text b { display: block; font-size: 21px; letter-spacing: .02em; }
+.splash-text small { display: block; margin-top: 4px; color: var(--gold); letter-spacing: .3em; font-size: 13px; font-weight: 600; }
+@keyframes appFadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+
+/* ---------- app home screen ---------- */
+.app-home { position: relative; overflow: hidden; min-height: calc(100vh - 62px); min-height: calc(100dvh - 62px);
+  align-items: center; justify-content: center; padding: 26px 18px 34px; color: #fff;
+  background: radial-gradient(700px 380px at 0% -10%, rgba(200,16,46,.45), transparent 60%),
+              radial-gradient(600px 380px at 100% 110%, rgba(245,179,1,.18), transparent 60%),
+              linear-gradient(160deg, var(--navy-d), var(--navy)); }
+.app-bg-logo { position: absolute; left: 50%; top: 50%; width: min(140vw, 680px); max-width: none; border-radius: 50%; opacity: .07; pointer-events: none;
+  transform: translate(-50%, -50%); animation: lionBreathe 7s ease-in-out infinite; }
+@keyframes lionBreathe { 50% { transform: translate(-50%, -50%) scale(1.07); opacity: .1; } }
+.app-home-in { position: relative; width: 100%; max-width: 440px; text-align: center; }
+.app-logo { width: 108px; height: 108px; border-radius: 50%; background: #fff; object-fit: cover;
+  box-shadow: 0 0 0 5px rgba(245,179,1,.5), 0 16px 36px rgba(0,0,0,.4); animation: appFadeUp .6s ease both, lionIdle 6s ease-in-out 2s infinite; }
+@keyframes lionIdle { 0%, 84%, 100% { transform: scale(1) rotate(0); } 87% { transform: scale(1.12) rotate(-6deg); } 90% { transform: scale(1.05) rotate(5deg); } 93% { transform: scale(1.09) rotate(-3deg); } 96% { transform: scale(1.02) rotate(1deg); } }
+.app-home h1 { font-size: 23px; line-height: 1.25; margin: 16px 0 6px; animation: appFadeUp .6s ease .1s both; }
+.app-tag { margin: 0 auto; max-width: 340px; color: var(--gold); font-weight: 600; font-size: 15.5px; min-height: 44px; animation: appFadeUp .6s ease .2s both; }
+.app-choices { display: grid; gap: 12px; margin-top: 22px; }
+.app-choice { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; padding: 15px 16px; border-radius: 18px; cursor: pointer; font: inherit; text-decoration: none;
+  color: #fff; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.16); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  transition: transform .15s, background .2s; animation: appFadeUp .5s ease both; }
+.app-choice:nth-child(1) { animation-delay: .25s; } .app-choice:nth-child(2) { animation-delay: .32s; } .app-choice:nth-child(3) { animation-delay: .39s; } .app-choice:nth-child(4) { animation-delay: .46s; }
+.app-choice:active { transform: scale(.97); }
+.app-choice:hover { background: rgba(255,255,255,.14); }
+.app-choice.primary { background: linear-gradient(135deg, var(--crimson), var(--crimson-d)); border-color: transparent; box-shadow: 0 10px 24px rgba(200,16,46,.35); }
+.app-choice .ic { flex: none; width: 52px; height: 52px; border-radius: 15px; display: grid; place-items: center; font-size: 26px; background: rgba(255,255,255,.14); }
+.app-choice b { display: block; font-size: 17px; }
+.app-choice small { display: block; font-size: 13.5px; opacity: .85; margin-top: 2px; }
+.app-choice .go { margin-left: auto; font-size: 30px; line-height: 1; opacity: .7; }
+a.app-choice, a.app-choice:hover { color: #fff; }
+.app-foot { margin: 22px 0 0; font-size: 13px; opacity: .65; letter-spacing: .04em; }
+
+/* light theme: white app home, white cards */
+:root:not([data-theme="dark"]) .app-home { color: var(--text);
+  background: radial-gradient(700px 380px at 0% -10%, rgba(200,16,46,.10), transparent 60%),
+              radial-gradient(600px 380px at 100% 110%, rgba(245,179,1,.14), transparent 60%),
+              linear-gradient(180deg, #ffffff, #f4f6fb); }
+:root:not([data-theme="dark"]) .app-home h1 { color: var(--navy); }
+:root:not([data-theme="dark"]) .app-tag { color: var(--crimson-d); }
+:root:not([data-theme="dark"]) .app-choice:not(.primary) { color: var(--text); background: #fff; border-color: var(--line); box-shadow: 0 4px 14px rgba(15,23,42,.07); }
+:root:not([data-theme="dark"]) .app-choice:not(.primary) .ic { background: var(--surface-2); }
+:root:not([data-theme="dark"]) .app-bg-logo { opacity: .08; }
+@media (prefers-reduced-motion: reduce) { .splash *, .app-home * { animation: none !important; } }
+/* reminders */
+.due-banner { margin-top: -8px; flex-wrap: wrap; }
+.remind-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.req-card.urgent { border-color: var(--red-bd); background: var(--row-red); }
+
+/* v8: clean app opening screen — only switches, round logo and the 3 options */
+.app-mode:not(.app-screen) .topbar { position: absolute; top: 0; left: 0; right: 0; background: transparent !important; box-shadow: none !important; }
+.app-mode:not(.app-screen) .topbar .brand { display: none; }
+.app-mode:not(.app-screen) .topbar .sp { flex: 1; }
+.app-mode .app-home { min-height: 100vh; min-height: 100dvh; padding-top: 70px; }
+.app-mode .app-home h1, .app-mode .app-tag, .app-mode .app-foot, .app-mode .app-choice small { display: none; }
+.app-mode .app-logo { width: 150px; height: 150px; margin-bottom: 30px; }
+.app-mode .app-choice { padding: 18px 16px; }
+.app-mode .app-choice b { font-size: 18px; }

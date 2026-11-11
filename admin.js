@@ -4,6 +4,7 @@ import { initPage, cardData } from './common.js';
 import { tr } from './i18n.js';
 import { mountCard, downloadButtons, wireDownloads } from './card.js';
 import { buildLedger, cardStatus, esc, npr, fmtDate, isoDate, modal, toast, monthKey, addMonths, monthLabel, STATUS_TEXT, DAY, showReceipt } from './utils.js';
+import { nextDue, milestone, adminMessage } from './reminders.js';
 const needsReview = (p) => p.status === 'pending' || (p.status === 'approved' && p.reviewed === false);
 
 const store = await initPage();
@@ -25,6 +26,7 @@ async function load() {
   members.sort((a, b) => b.joinMs - a.joinMs);
   const pend = payments.filter(needsReview).length + waivers.filter((w) => w.status === 'pending').length;
   const b = document.getElementById('apBadge'); b.hidden = !pend; b.textContent = pend;
+  const nRem = toRemind().length; const rb = document.getElementById('rmBadge'); rb.hidden = !nRem; rb.textContent = nRem;
   show(current);
 }
 function enrich(m) {
@@ -44,7 +46,7 @@ document.getElementById('nav').addEventListener('click', (e) => {
 function show(v) {
   current = v;
   charts.splice(0).forEach((c) => c.destroy());
-  ({ overview, members: membersView, approvals, payments: paymentsView })[v]();
+  ({ overview, members: membersView, approvals, payments: paymentsView, reminders: remindersView })[v]();
 }
 
 // ---------- year / month helpers ----------
@@ -534,6 +536,39 @@ function paymentsView() {
   view.querySelector('#preset').onclick = () => { Object.assign(pfilt, { q: '', status: '' }); Object.assign(filt, { year: '', month: '' }); paymentsView(); };
   view.querySelector('#xlsP').onclick = () => exportExcel();
   draw();
+}
+
+// ============================ REMINDERS ============================
+/** members whose next payment is due within 7 days, or overdue */
+function toRemind() {
+  return members.map((m) => ({ m, d: nextDue(m, m._L) }))
+    .filter((x) => x.d && x.d.daysLeft <= 7)
+    .sort((a, b) => a.d.daysLeft - b.d.daysLeft);
+}
+function remindersView() {
+  const list = toRemind();
+  const tag = (d) => { const ms = milestone(d.daysLeft); return ms === 'overdue' ? `<span class="pill rejected">Overdue ${-d.daysLeft} day(s)</span>` : `<span class="pill ${d.daysLeft <= 3 ? 'rejected' : 'due'}">${d.daysLeft === 0 ? 'Due today' : `Due in ${d.daysLeft} day(s)`}</span>`; };
+  const phone = (m) => '977' + String(m.phone || '').replace(/[^\d]/g, '').slice(-10);
+  view.innerHTML = `
+    <div class="panel">
+      <h3>🔔 Payment reminders (${list.length})</h3>
+      <p class="hint" style="margin-top:-6px">Members whose next monthly contribution is due within 7 days or is overdue. Members with notifications turned on are reminded automatically 7, 5 and 3 days before; use these buttons to also send a WhatsApp or SMS.</p>
+      ${list.length ? `<div class="remind-list">${list.map(({ m, d }) => {
+        const msg = adminMessage(m, d);
+        return `<div class="req-card ${d.overdue || d.daysLeft <= 3 ? 'urgent' : ''}">
+          <div class="top"><b>${esc(m.fullName)} <span class="mono hint">${esc(m.memberNo)}</span></b>${tag(d)}</div>
+          <p>${npr(d.amount)} for ${esc(d.label)} · due ${fmtDate(d.due)} · 📞 ${esc(m.phone)}</p>
+          <div class="actions">
+            <a class="btn btn-sm btn-green" target="_blank" rel="noopener" href="https://wa.me/${phone(m)}?text=${encodeURIComponent(msg)}">WhatsApp</a>
+            <a class="btn btn-sm" href="sms:+${phone(m)}?body=${encodeURIComponent(msg)}">SMS</a>
+            <button class="btn btn-sm btn-ghost" data-copy="${esc(msg)}">Copy message</button>
+          </div>
+        </div>`;
+      }).join('')}</div>` : '<div class="empty">✔ Nobody is due in the next 7 days.</div>'}
+    </div>`;
+  view.querySelectorAll('[data-copy]').forEach((b) => (b.onclick = async () => {
+    try { await navigator.clipboard.writeText(b.dataset.copy); toast('Message copied.', 'success'); } catch { toast(b.dataset.copy, 'info'); }
+  }));
 }
 
 function wireReceipts(root) {

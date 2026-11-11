@@ -20,12 +20,37 @@ mountCard($('#heroCard'), {
   paidThrough: monthKey(now), cardToken: 'sample',
 });
 
+// ---------- installed-app mode (splash + app home screen) ----------
+const root = document.documentElement;
+const isApp = root.classList.contains('app-mode');
+
 // ---------- tabs ----------
 const showTab = (name) => {
   document.querySelectorAll('.tabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === name));
   ['register', 'login', 'admin'].forEach((t) => ($('#tab-' + t).hidden = t !== name));
-  history.replaceState(null, '', '#' + name);
+  if (isApp) {
+    if (!root.classList.contains('app-screen')) history.pushState({ screen: name }, '', '#' + name);
+    else history.replaceState({ screen: name }, '', '#' + name);
+    root.classList.add('app-screen');
+    window.scrollTo(0, 0);
+  } else history.replaceState(null, '', '#' + name);
 };
+
+if (isApp) {
+  if (root.classList.contains('app-splash')) {
+    try { sessionStorage.setItem('splashShown', '1'); } catch {}
+    setTimeout(() => { $('#splash').classList.add('out'); setTimeout(() => root.classList.remove('app-splash'), 650); }, 2300);
+  }
+  const closeScreen = () => {
+    root.classList.remove('app-screen');
+    ['register', 'login', 'admin'].forEach((t) => ($('#tab-' + t).hidden = true));
+    window.scrollTo(0, 0);
+  };
+  document.querySelectorAll('[data-open]').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.open)));
+  $('#appBack').addEventListener('click', () => (history.state?.screen ? history.back() : (closeScreen(), history.replaceState(null, '', location.pathname))));
+  window.addEventListener('popstate', (e) => { if (e.state?.screen) showTab(e.state.screen); else closeScreen(); });
+  if (sess) { $('#appDash').hidden = false; $('#appDash').href = sess.role === 'admin' ? 'admin.html' : 'member.html'; }
+}
 document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('click', () => {
   showTab(b.dataset.tab);
   // on phones the form is below the fold: bring it into view
@@ -52,7 +77,7 @@ let hookI = 0;
 const hookEl = $('#hook');
 setInterval(() => {
   hookEl.classList.add('out');
-  setTimeout(() => { hookI = (hookI + 1) % HOOKS.length; hookEl.textContent = HOOKS[hookI]; hookEl.classList.remove('out'); }, 450);
+  setTimeout(() => { hookI = (hookI + 1) % HOOKS.length; hookEl.textContent = HOOKS[hookI]; hookEl.classList.remove('out'); const ah = $('#appHook'); if (ah) ah.textContent = HOOKS[hookI]; }, 450);
 }, 4200);
 
 // ---------- password fields ----------
