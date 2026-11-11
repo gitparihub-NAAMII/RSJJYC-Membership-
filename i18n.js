@@ -328,6 +328,8 @@ const NE = {
   "Online payment through this QR code is not active yet. We are setting up the club's payment gateway and it will be available soon.": 'यो QR कोडबाट अनलाइन भुक्तानी अझै सक्रिय भएको छैन। क्लबको भुक्तानी प्रणाली तयार गरिँदैछ र छिट्टै उपलब्ध हुनेछ।',
   'Meanwhile, pay your contribution directly to the club (cash or bank) and upload the receipt in your member dashboard.': 'त्यतिन्जेल आफ्नो योगदान क्लबलाई सिधै (नगद वा बैंक) तिर्नुहोस् र सदस्य ड्यासबोर्डमा रसिद अपलोड गर्नुहोस्।',
   'Go to member log in': 'सदस्य लग इनमा जानुहोस्',
+  'Your account has been created! Log in now — the first time you log in, the membership form will open so you can fill in your details.':
+    'तपाईंको खाता बन्यो! अब लग इन गर्नुहोस् — पहिलो पटक लग इन गर्दा विवरण भर्नका लागि सदस्यता फारम खुल्नेछ।',
   'Danger zone': 'जोखिमपूर्ण कार्य',
   'Permanently removes this membership: details, card, QR page, payments, receipts and waiver requests. Their mobile number and e-mail become free to register again.':
     'यो सदस्यता स्थायी रूपमा हटाउँछ: विवरण, कार्ड, QR पेज, भुक्तानी, रसिद र छुट अनुरोध। उनको मोबाइल नम्बर र इमेल फेरि दर्ता गर्न खुला हुन्छ।',

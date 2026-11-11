@@ -14,6 +14,7 @@ export function verifyUrl(token) {
 
 /** data: { fullName, memberNo, memberType, photo, dob, joinMs, expiryMs, periods, paidThrough, cardToken, profession } */
 export function renderCard(data, { showStatus = true } = {}) {
+  const date = (v) => (data.masked ? 'XXXXXX' : fmtDate(v));
   const st = cardStatus(data);
   const el = document.createElement('div');
   el.className = `mcard st-${st.code}`;
@@ -31,9 +32,9 @@ export function renderCard(data, { showStatus = true } = {}) {
         <div class="mc-name">${esc((data.fullName || '').toUpperCase())}</div>
         <div class="mc-grid">
           <div><span>MEMBER NO.</span><b class="mono">${esc(data.memberNo || '—')}</b></div>
-          ${data.dob ? `<div><span>DATE OF BIRTH</span><b>${fmtDate(data.dob)}</b></div>` : ''}
-          <div><span>MEMBER SINCE</span><b>${fmtDate(data.joinMs)}</b></div>
-          <div><span>VALID UNTIL</span><b>${fmtDate(data.expiryMs)}</b></div>
+          ${data.dob ? `<div><span>DATE OF BIRTH</span><b>${date(data.dob)}</b></div>` : ''}
+          <div><span>MEMBER SINCE</span><b>${date(data.joinMs)}</b></div>
+          <div><span>VALID UNTIL</span><b>${date(data.expiryMs)}</b></div>
         </div>
       </div>
       <div class="mc-qr"><div class="mc-qr-box"></div><small>SCAN TO VERIFY</small></div>

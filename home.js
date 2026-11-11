@@ -15,7 +15,7 @@ if (sess) { const b = $('#continueBtn'); b.hidden = false; b.href = sess.role ==
 // ---------- hero sample card ----------
 const now = new Date();
 mountCard($('#heroCard'), {
-  fullName: 'Member Name', memberNo: `0${String(now.getFullYear()).slice(-2)}-RSJJYC-001-MN`, memberType: MEMBER_TYPES[0],
+  fullName: 'ABC Chaudhary', memberNo: `0${String(now.getFullYear()).slice(-2)}-RSJJYC-001-AC`, memberType: MEMBER_TYPES[0], masked: true,
   photo: '', dob: '2000-01-01', bloodGroup: 'O+', joinMs: now.getTime(), expiryMs: addYears(now.getTime()), periods: [{ start: monthKey(now), months: 12 }],
   paidThrough: monthKey(now), cardToken: 'sample',
 });
@@ -77,7 +77,16 @@ $('#regForm').addEventListener('submit', async (e) => {
   const btn = $('#regBtn'); btn.disabled = true; btn.textContent = 'Creating your account…';
   try {
     await store.createAccount(u, $('#regPw').value);
-    location.href = 'member.html';
+    // Account created -> show the Member Log In form; first log-in opens the membership form
+    await store.logout();
+    $('#regForm').reset();
+    $('#regForm').querySelectorAll('input').forEach((i) => i.dispatchEvent(new Event('input')));
+    btn.disabled = false; btn.textContent = 'Create my account';
+    showTab('login');
+    $('#loginForm').username.value = u.trim();
+    $('#loginOk').hidden = false;
+    $('#loginForm').password.focus();
+    $('#tabs').scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (ex) {
     err.textContent = friendlyError(ex);
     btn.disabled = false; btn.textContent = 'Create my account';
