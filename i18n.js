@@ -416,6 +416,7 @@ const NE = {
   'Payment receipt not uploaded yet.': 'भुक्तानीको रसिद अझै अपलोड भएको छैन।',
   'Please pay the first month and upload the payment receipt.': 'कृपया पहिलो महिनाको भुक्तानी गरी रसिद अपलोड गर्नुहोस्।',
   'Membership created, but the payment could not be saved. Please pay again from your dashboard.': 'सदस्यता बन्यो, तर भुक्तानी सेभ हुन सकेन। कृपया ड्यासबोर्डबाट फेरि भुक्तानी गर्नुहोस्।',
+  'Admins can view member details but cannot edit or delete members.': 'एडमिनले सदस्यको विवरण हेर्न सक्छन्, तर सम्पादन वा हटाउन सक्दैनन्।',
   'Danger zone': 'जोखिमपूर्ण कार्य',
   'Permanently removes this membership: details, card, QR page, payments, receipts and waiver requests. Their mobile number and e-mail become free to register again.':
     'यो सदस्यता स्थायी रूपमा हटाउँछ: विवरण, कार्ड, QR पेज, भुक्तानी, रसिद र छुट अनुरोध। उनको मोबाइल नम्बर र इमेल फेरि दर्ता गर्न खुला हुन्छ।',

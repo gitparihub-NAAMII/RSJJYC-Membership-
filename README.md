@@ -10,7 +10,7 @@ A static website (HTML + CSS + JavaScript) backed by **Firebase Authentication +
 - **Passwords**: "Forgot password?" e-mails a reset link to e-mail users (mobile-number users must ask the admin); "Change password" is in the member dashboard.
 - **Member dashboard**: days left until expiry, total contributed, outstanding dues, and a month-by-month record (green = paid, red = missed, amber = due, blue = waiting for admin, grey = waived). Members can pay a contribution, ask for a waiver, and renew once their dues are cleared.
 - **English / नेपाली switch** and **dark / light theme switch** in the top bar of every page. The choice is remembered. Translations live in `i18n.js` (the `NE` dictionary); the printed membership card always stays in English.
-- **Admin dashboard**: totals, new / expiring / expired members, interactive charts (Chart.js), filters (by date, status or type), CSV export, and approve/reject for payments and waivers. Every decision needs a reason.
+- **Admin dashboard** (admins can view members but cannot edit or delete them — also enforced by `firestore.rules`): totals, new / expiring / expired members, interactive charts (Chart.js), filters (by date, status or type), CSV export, and approve/reject for payments and waivers. Every decision needs a reason.
 
 ## Membership number
 

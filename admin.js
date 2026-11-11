@@ -1,4 +1,4 @@
-import { MEMBER_TYPES, RULES, PROFESSIONS, PROVINCES, BLOOD_GROUPS, DONATION_TIERS } from './config.js';
+import { MEMBER_TYPES, RULES } from './config.js';
 import { friendlyError } from './store.js';
 import { initPage, cardData } from './common.js';
 import { tr } from './i18n.js';
@@ -247,12 +247,9 @@ function memberModal(m) {
     <h3>${esc(m.fullName)} <span class="pill ${m._S.code}">${m._S.label}</span></h3>
     <div class="dash" style="grid-template-columns:380px 1fr">
       <div><div id="mCard"></div>${downloadButtons()}
-        <button class="btn btn-block" id="mEdit" style="margin-top:14px">✏️ Edit member details</button>
-        <div class="danger-zone">
-          <b>Danger zone</b>
-          <p class="hint">Permanently removes this membership: details, card, QR page, payments, receipts and waiver requests. Their mobile number and e-mail become free to register again.</p>
-          <button class="btn btn-red btn-sm" id="mDelete">🗑 Delete member</button>
-        </div>
+        <label class="f" style="margin-top:16px">Member type (shown on card)
+          <div style="display:flex;gap:8px"><select id="mType">${MEMBER_TYPES.map((t) => `<option value="${t}" ${t === m.memberType ? 'selected' : ''}>${t}</option>`).join('')}</select><button class="btn btn-sm" id="mTypeSave">Save</button></div></label>
+        <p class="hint" style="margin-top:12px">🔒 Admins can view member details but cannot edit or delete members.</p>
       </div>
       <div>
         <dl class="kv">
@@ -270,108 +267,10 @@ function memberModal(m) {
   const data = cardData(m, m._L.paidThrough);
   mountCard(el.querySelector('#mCard'), data);
   wireDownloads(el, () => data);
-  el.querySelector('#mEdit').onclick = () => { close(); editMember(m); };
-  el.querySelector('#mDelete').onclick = () => { close(); confirmDelete(m); };
-}
-
-// ---------- edit member ----------
-function editMember(m) {
-  const opt = (list, v) => list.map((x) => `<option value="${esc(x)}" ${x === v ? 'selected' : ''}>${esc(x)}</option>`).join('');
-  const profs = PROFESSIONS.map((p) => p.label);
-  const profVal = m.profession?.startsWith('Other') ? 'Other' : m.profession;
-  const tiers = [...new Set([...DONATION_TIERS.notEmployed, ...DONATION_TIERS.employed, m.pledge])].sort((a, b) => a - b);
-  const addrBlock = (k, a = {}) => `
-    <div class="grid g4" data-ea="${k}">
-      <label class="f">Province<select name="${k}Province"><option value="">—</option>${opt(Object.keys(PROVINCES), a.province)}</select></label>
-      <label class="f">District<select name="${k}District"><option value="">—</option>${opt(PROVINCES[a.province] || [], a.district)}</select></label>
-      <label class="f">Municipality / Rural Mun.<input name="${k}Municipality" value="${esc(a.municipality || '')}"></label>
-      <label class="f">Ward no.<input name="${k}Ward" type="number" min="1" max="35" value="${esc(a.ward || '')}"></label>
-      <label class="f" style="grid-column:1/-1">Tole / Street<input name="${k}Tole" value="${esc(a.tole || '')}"></label>
-    </div>`;
-  const { el, close } = modal(`
-    <h3>✏️ Edit member — <span class="mono">${esc(m.memberNo)}</span></h3>
-    <form id="editForm" novalidate>
-      <fieldset><legend>Personal details</legend>
-        <div class="grid g3">
-          <label class="f">First name<input name="firstName" value="${esc(m.firstName)}" required></label>
-          <label class="f">Middle name<input name="middleName" value="${esc(m.middleName || '')}"></label>
-          <label class="f">Surname<input name="lastName" value="${esc(m.lastName)}" required></label>
-          <label class="f">Date of birth (AD)<input name="dob" type="date" value="${esc(m.dob || '')}"></label>
-          <label class="f">Gender<select name="gender"><option value="">—</option>${opt(['Male', 'Female', 'Other', 'Prefer not to say'], m.gender)}</select></label>
-          <label class="f">Blood group<select name="bloodGroup"><option value="">—</option>${opt(BLOOD_GROUPS, m.bloodGroup)}</select></label>
-          <label class="f">Mobile number<input name="phone" value="${esc(m.phone)}" required></label>
-          <label class="f">E-mail<input name="email" type="email" value="${esc(m.email || '')}"></label>
-          <label class="f">Member type (shown on card)<select name="memberType">${opt(MEMBER_TYPES, m.memberType)}</select></label>
-        </div>
-      </fieldset>
-      <fieldset><legend>Profession &amp; contribution</legend>
-        <div class="grid g3">
-          <label class="f">Profession<select name="profession">${opt(profs, profVal)}</select></label>
-          <label class="f">If other, specify<input name="professionOther" value="${esc(m.profession?.startsWith('Other: ') ? m.profession.slice(7) : '')}"></label>
-          <label class="f">Monthly contribution<select name="pledge">${tiers.map((t) => `<option value="${t}" ${t === m.pledge ? 'selected' : ''}>${npr(t)}</option>`).join('')}</select></label>
-        </div>
-      </fieldset>
-      <fieldset><legend>Permanent address</legend>${addrBlock('permanent', m.permanentAddress)}</fieldset>
-      <fieldset><legend>Temporary address</legend>${addrBlock('temporary', m.temporaryAddress)}</fieldset>
-      <p class="hint">Login username (<b>${esc(m.username)}</b>) and member number stay the same. Changing the mobile number or e-mail also updates the one-membership check.</p>
-      <div class="err" id="eErr"></div>
-      <div class="actions"><button type="button" class="btn btn-ghost" data-close>Cancel</button><button class="btn btn-primary" id="eSave">Save changes</button></div>
-    </form>`, { wide: true });
-  const f = el.querySelector('#editForm');
-  ['permanent', 'temporary'].forEach((k) => {
-    f.elements[k + 'Province'].onchange = (e) => {
-      f.elements[k + 'District'].innerHTML = '<option value="">—</option>' + (PROVINCES[e.target.value] || []).map((d) => `<option value="${d}">${d}</option>`).join('');
-    };
-  });
-  f.onsubmit = async (e) => {
-    e.preventDefault();
-    const E = f.elements, err = el.querySelector('#eErr'); err.textContent = '';
-    const v = (n) => E[n].value.trim();
-    const phone = v('phone').replace(/[^\d]/g, '').replace(/^977(?=\d{10}$)/, '');
-    const email = v('email').toLowerCase();
-    if (!v('firstName') || !v('lastName')) { err.textContent = 'Please fill in all required fields.'; return; }
-    if (!/^9\d{9}$/.test(phone)) { err.textContent = 'Enter a valid 10-digit Nepali mobile number (98XXXXXXXX).'; return; }
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { err.textContent = 'Enter a valid e-mail address.'; return; }
-    const readA = (k) => ({ province: v(k + 'Province'), district: v(k + 'District'), municipality: v(k + 'Municipality'), ward: v(k + 'Ward'), tole: v(k + 'Tole') });
-    const prof = v('profession') === 'Other' && v('professionOther') ? `Other: ${v('professionOther')}` : v('profession');
-    const fullName = [v('firstName'), v('middleName'), v('lastName')].filter(Boolean).join(' ');
-    const patch = {
-      firstName: v('firstName'), middleName: v('middleName'), lastName: v('lastName'), fullName,
-      dob: v('dob') || m.dob, gender: v('gender'), bloodGroup: v('bloodGroup'), phone, email,
-      memberType: v('memberType'), profession: prof, employed: !!PROFESSIONS.find((p) => p.label === v('profession'))?.employed,
-      pledge: Number(v('pledge')), permanentAddress: readA('permanent'), temporaryAddress: readA('temporary'),
-      updatedAt: new Date().toISOString(), updatedBy: 'admin',
-    };
-    const pubPatch = { fullName, dob: patch.dob, bloodGroup: patch.bloodGroup, memberType: patch.memberType };
-    const btn = el.querySelector('#eSave'); btn.disabled = true;
-    try { await store.adminUpdateMember(m, patch, pubPatch); close(); toast('Member details updated.', 'success'); load(); }
-    catch (ex) { err.textContent = friendlyError(ex); btn.disabled = false; }
-  };
-}
-
-function confirmDelete(m) {
-  const nPay = payments.filter((p) => p.uid === m.uid).length, nW = waivers.filter((w) => w.uid === m.uid).length;
-  const { el, close } = modal(`
-    <h3>🗑 Delete this member?</h3>
-    <p><b>${esc(m.fullName)}</b> · <span class="mono">${esc(m.memberNo)}</span></p>
-    <ul class="hint" style="margin:6px 0 12px;padding-left:18px">
-      <li>Membership details, card and QR verification page</li>
-      <li>${nPay} payment(s) with receipts and ${nW} waiver request(s)</li>
-      <li>Frees mobile ${esc(m.phone)}${m.email ? ' and e-mail ' + esc(m.email) : ''} for a new registration</li>
-    </ul>
-    <p class="err" style="font-weight:600">This cannot be undone.</p>
-    <label class="f">Type the member number to confirm<input id="delConfirm" placeholder="${esc(m.memberNo)}" autocomplete="off"></label>
-    <p class="hint">The login account stays in Firebase (Authentication → Users). Delete it there too if you want to remove the login completely.</p>
-    <div class="actions" style="margin-top:12px">
-      <button class="btn btn-ghost" data-close>Cancel</button>
-      <button class="btn btn-red" id="delGo" disabled>Delete permanently</button>
-    </div>`);
-  const inp = el.querySelector('#delConfirm'), btn = el.querySelector('#delGo');
-  inp.addEventListener('input', () => (btn.disabled = inp.value.trim().toUpperCase() !== m.memberNo));
-  btn.onclick = async () => {
-    btn.disabled = true; btn.textContent = 'Deleting…';
-    try { await store.deleteMember(m); close(); toast(`Member ${m.memberNo} deleted.`, 'success'); load(); }
-    catch (e) { toast(friendlyError(e), 'error'); btn.disabled = false; btn.textContent = 'Delete permanently'; }
+  el.querySelector('#mTypeSave').onclick = async () => {
+    const t = el.querySelector('#mType').value;
+    try { await store.updateMember(m.uid, { memberType: t }); await store.updatePublicCard(m.cardToken, { memberType: t }); toast('Member type updated', 'success'); close(); load(); }
+    catch (e) { toast(friendlyError(e), 'error'); }
   };
 }
 

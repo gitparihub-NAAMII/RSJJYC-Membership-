@@ -16,12 +16,12 @@ service cloud.firestore {
     }
 
     // One person = one membership: each phone / e-mail can be claimed only once.
-    // (An existing key can never be overwritten by a member, only by an admin.)
+    // (A key can never be overwritten or removed through the website.)
     match /uniques/{key} {
       allow get: if signedIn();
       allow list: if isAdmin();
-      allow create: if signedIn() && (request.resource.data.uid == request.auth.uid || isAdmin());
-      allow update, delete: if isAdmin();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if false;
     }
 
     // membership-number sequence per year (can only ever go up by one)
@@ -37,9 +37,11 @@ service cloud.firestore {
         && request.resource.data.uid == uid
         && request.resource.data.memberType == 'General Member'
         && request.resource.data.paidThrough == null;
-      allow update: if isAdmin()
+      // Admins may NOT edit member details or delete members. They can only set the
+      // member type, the paid-through month and the active / inactive flag.
+      allow update: if (isAdmin() && onlyKeys(['memberType', 'paidThrough', 'inactive']))
         || (signedIn() && request.auth.uid == uid && onlyKeys(['expiryMs', 'periods', 'renewals', 'paidThrough']) && renewalOk());
-      allow delete: if isAdmin();
+      allow delete: if false;
     }
 
     // Public QR card: anyone with the (unguessable) token can read ONE card; nobody can list them.
@@ -49,12 +51,13 @@ service cloud.firestore {
       allow create: if signedIn() && request.resource.data.uid == request.auth.uid
         && request.resource.data.memberType == 'General Member'
         && request.resource.data.paidThrough == null;
-      allow update: if isAdmin()
+      allow update: if (isAdmin() && onlyKeys(['memberType', 'paidThrough', 'inactive']))
         || (signedIn() && resource.data.uid == request.auth.uid && onlyKeys(['expiryMs', 'periods', 'paidThrough']) && renewalOk());
-      allow delete: if isAdmin();
+      allow delete: if false;
     }
 
     // A payment counts as paid only when a receipt is uploaded in the same write.
+    // Admins only record their decision (approve / reject); payments are never deleted.
     match /payments/{id} {
       allow read: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());
       allow create: if signedIn() && request.resource.data.uid == request.auth.uid
@@ -62,19 +65,21 @@ service cloud.firestore {
             || (request.resource.data.status == 'approved'
                 && request.resource.data.reviewed == false
                 && existsAfter(/databases/$(database)/documents/receipts/$(id))));
-      allow update, delete: if isAdmin();
+      allow update: if isAdmin() && onlyKeys(['status', 'reviewed', 'reviewedAt', 'reviewedBy', 'adminNote']);
+      allow delete: if false;
     }
 
     match /receipts/{id} {
       allow read: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());
       allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
-      allow update, delete: if isAdmin();
+      allow update, delete: if false;
     }
 
     match /waivers/{id} {
       allow read: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());
       allow create: if signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.status == 'pending';
-      allow update, delete: if isAdmin();
+      allow update: if isAdmin() && onlyKeys(['status', 'reviewedAt', 'reviewedBy', 'adminReason']);
+      allow delete: if false;
     }
   }
 }
