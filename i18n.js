@@ -1,0 +1,445 @@
+// ============================================================================
+//  English / Nepali translation.
+//  The pages are written in English. When Nepali is selected, every visible
+//  text (including text added later by JavaScript) is translated through the
+//  dictionary below, and restored when switching back to English.
+//  To add/adjust a translation, edit NE. Keys with {x} are patterns.
+//  The membership card itself (.mcard) stays in English (official ID format).
+// ============================================================================
+
+const NE = {
+  // ---------- organisation / header ----------
+  'Royal Star Jan Jyoti Youth Club': 'रोयल स्टार जनज्योति युवा क्लब',
+  'Royal Star Jan Jyoti Youth Club — Membership': 'रोयल स्टार जनज्योति युवा क्लब — सदस्यता',
+  'Membership Portal': 'सदस्यता पोर्टल',
+  'Member Dashboard': 'सदस्य ड्यासबोर्ड',
+  'Admin Dashboard': 'एडमिन ड्यासबोर्ड',
+  'Membership Verification': 'सदस्यता प्रमाणीकरण',
+  'My Membership': 'मेरो सदस्यता',
+  'Card Verification': 'कार्ड प्रमाणीकरण',
+  'DEMO MODE': 'डेमो मोड',
+  'My dashboard': 'मेरो ड्यासबोर्ड',
+  'Log out': 'लग आउट',
+  'Switch to dark theme': 'डार्क थिममा जानुहोस्',
+  'Switch to light theme': 'लाइट थिममा जानुहोस्',
+  'Change language': 'भाषा परिवर्तन गर्नुहोस्',
+  'Estd. 1979': 'स्थापना: सन् १९७९',
+
+  // ---------- hero / motivation ----------
+  'Be part of the change.': 'परिवर्तनको हिस्सा बन्नुहोस्।',
+  'Join a greater youth community that has been serving society since 1979.': 'सन् १९७९ देखि समाज सेवामा समर्पित विशाल युवा समुदायमा सामेल हुनुहोस्।',
+  'Be part of a greater youth community serving since 1979.': 'सन् १९७९ देखि सेवारत विशाल युवा समुदायको हिस्सा बन्नुहोस्।',
+  'Be the change you want to see in society.': 'समाजमा जुन परिवर्तन चाहनुहुन्छ, त्यो परिवर्तन आफैं बन्नुहोस्।',
+  'Your energy + our legacy = a stronger community.': 'तपाईंको ऊर्जा + हाम्रो विरासत = अझ बलियो समुदाय।',
+  'Join hands today — together we change tomorrow.': 'आजै हात मिलाउनुहोस् — सँगै भोलि बदलौं।',
+  'Every member makes the society stronger. Make your mark.': 'हरेक सदस्यले समाजलाई बलियो बनाउँछ। आफ्नो छाप छोड्नुहोस्।',
+  '{n} years of youth service. Your chapter starts here.': 'युवा सेवाका {n} वर्ष। तपाईंको अध्याय यहीँबाट सुरु हुन्छ।',
+  'Register in minutes, choose your monthly contribution and get your digital membership card — download it as PNG, JPG, PDF or print it.':
+    'केही मिनेटमै दर्ता गर्नुहोस्, मासिक योगदान छान्नुहोस् र डिजिटल सदस्यता कार्ड पाउनुहोस् — PNG, JPG, PDF मा डाउनलोड गर्नुहोस् वा प्रिन्ट गर्नुहोस्।',
+  'Become a member': 'सदस्य बन्नुहोस्',
+  "I'm already a member": 'म पहिले नै सदस्य हुँ',
+  'Serving since': 'देखि सेवारत',
+  'years of service': 'वर्षको सेवा',
+  'membership validity': 'सदस्यता अवधि',
+  'verified digital card': 'प्रमाणित डिजिटल कार्ड',
+  '1 year': '१ वर्ष',
+
+  // ---------- tabs ----------
+  'New Member Register': 'नयाँ सदस्य दर्ता',
+  'Member Log In': 'सदस्य लग इन',
+  'Admin Log In': 'एडमिन लग इन',
+
+  // ---------- registration form ----------
+  'New Member Registration': 'नयाँ सदस्य दर्ता फारम',
+  'Fields marked * are required. Your membership number is generated automatically.': '* चिन्ह भएका विवरण अनिवार्य छन्। तपाईंको सदस्यता नम्बर स्वतः बन्नेछ।',
+  'Personal details': 'व्यक्तिगत विवरण',
+  'First name': 'पहिलो नाम',
+  'Middle name': 'बीचको नाम',
+  'Surname': 'थर',
+  'Date of birth': 'जन्म मिति',
+  'Age (as of application date)': 'उमेर (आवेदन मितिसम्म)',
+  'Select your date of birth': 'आफ्नो जन्म मिति छान्नुहोस्',
+  '{y} years {m} months': '{y} वर्ष {m} महिना',
+  'as of {d}': '{d} सम्म',
+  'English (AD)': 'अंग्रेजी (ई.सं.)',
+  'नेपाली (BS)': 'नेपाली (वि.सं.)',
+  'Select date (BS) — YYYY-MM-DD': 'मिति छान्नुहोस् (वि.सं.)',
+  '{d} AD': '{d} ई.सं.',
+  '{d} BS': '{d} वि.सं.',
+  'Gender': 'लिङ्ग',
+  'Select': 'छान्नुहोस्',
+  'Male': 'पुरुष', 'Female': 'महिला', 'Prefer not to say': 'भन्न चाहन्न',
+  'Mobile number': 'मोबाइल नम्बर',
+  'E-mail': 'इमेल',
+  'Profession': 'पेशा',
+  'What is your profession?': 'तपाईंको पेशा के हो?',
+  'Select profession': 'पेशा छान्नुहोस्',
+  'Please specify': 'कृपया खुलाउनुहोस्',
+  'Address': 'ठेगाना',
+  'Permanent address': 'स्थायी ठेगाना',
+  'Temporary address': 'अस्थायी ठेगाना',
+  'Same as permanent address': 'स्थायी ठेगाना जस्तै',
+  'Province': 'प्रदेश',
+  'Select province': 'प्रदेश छान्नुहोस्',
+  'District': 'जिल्ला',
+  'Select district': 'जिल्ला छान्नुहोस्',
+  'Municipality / Rural Mun.': 'नगरपालिका / गाउँपालिका',
+  'e.g. Kathmandu Metropolitan City': 'जस्तै: काठमाडौं महानगरपालिका',
+  'Ward no.': 'वडा नं.',
+  'Tole / Street': 'टोल / सडक',
+  'e.g. Baneshwor, House no.': 'जस्तै: बानेश्वर, घर नं.',
+  'Photo': 'फोटो',
+  'Upload a passport-size photo': 'पासपोर्ट साइजको फोटो अपलोड गर्नुहोस्',
+  'PNG or JPG, up to 5 MB. Face clearly visible — this photo is printed on your membership card.': 'PNG वा JPG, ५ MB सम्म। अनुहार प्रस्ट देखिने — यो फोटो तपाईंको सदस्यता कार्डमा छापिन्छ।',
+  'Login credentials': 'लग इन विवरण',
+  'Use mobile number': 'मोबाइल नम्बर प्रयोग गर्ने',
+  'Use e-mail': 'इमेल प्रयोग गर्ने',
+  'Username': 'प्रयोगकर्ता नाम',
+  'Filled from your mobile / e-mail': 'मोबाइल / इमेलबाट स्वतः भरिन्छ',
+  'Password': 'पासवर्ड',
+  'Confirm password': 'पासवर्ड पुष्टि गर्नुहोस्',
+  'Monthly contribution': 'मासिक योगदान',
+  'Choose your profession first to see the contribution options.': 'योगदानका विकल्पहरू हेर्न पहिले आफ्नो पेशा छान्नुहोस्।',
+  'As a working professional, choose your monthly donation:': 'रोजगारमा रहेकाले, आफ्नो मासिक सहयोग रकम छान्नुहोस्:',
+  'As a student / not currently employed, choose any monthly donation that suits you:': 'विद्यार्थी / हाल रोजगारमा नरहेकाले, आफूलाई मिल्ने मासिक सहयोग रकम छान्नुहोस्:',
+  'per month · {x}/yr': 'प्रति महिना · {x}/वर्ष',
+  'I confirm the information above is correct and agree to contribute monthly to keep my membership active.': 'माथिका विवरण सही छन् र सदस्यता सक्रिय राख्न मासिक योगदान गर्न म सहमत छु।',
+  'Register & generate my membership card': 'दर्ता गरी मेरो सदस्यता कार्ड बनाउनुहोस्',
+  'Creating your membership…': 'तपाईंको सदस्यता बनाइँदैछ…',
+
+  // validation / errors
+  'Please fill in all required fields.': 'कृपया सबै अनिवार्य विवरण भर्नुहोस्।',
+  'Please select your date of birth.': 'कृपया जन्म मिति छान्नुहोस्।',
+  'Enter a valid 10-digit Nepali mobile number (98XXXXXXXX).': '१० अंकको सही मोबाइल नम्बर लेख्नुहोस् (98XXXXXXXX)।',
+  'Enter a valid e-mail address.': 'सही इमेल ठेगाना लेख्नुहोस्।',
+  'Enter your e-mail to use it as your username.': 'इमेललाई प्रयोगकर्ता नाम बनाउन इमेल लेख्नुहोस्।',
+  'Please specify your profession.': 'कृपया आफ्नो पेशा खुलाउनुहोस्।',
+  'Please upload your photo.': 'कृपया आफ्नो फोटो अपलोड गर्नुहोस्।',
+  'Password must be at least 6 characters.': 'पासवर्ड कम्तीमा ६ अक्षरको हुनुपर्छ।',
+  'Passwords do not match.': 'पासवर्ड मेल खाएन।',
+  'Please choose a monthly contribution.': 'कृपया मासिक योगदान छान्नुहोस्।',
+  'Please confirm the declaration.': 'कृपया घोषणा स्वीकार गर्नुहोस्।',
+  'Photo must be PNG or JPG': 'फोटो PNG वा JPG हुनुपर्छ',
+  'Photo must be smaller than {n} MB': 'फोटो {n} MB भन्दा सानो हुनुपर्छ',
+  'Could not read that image': 'फोटो पढ्न सकिएन',
+  'This username (phone / e-mail) is already registered. Please log in instead.': 'यो प्रयोगकर्ता नाम (फोन / इमेल) पहिले नै दर्ता छ। कृपया लग इन गर्नुहोस्।',
+  'Wrong username or password.': 'प्रयोगकर्ता नाम वा पासवर्ड मिलेन।',
+  'Please enter a valid e-mail address or phone number.': 'कृपया सही इमेल वा फोन नम्बर लेख्नुहोस्।',
+  'Too many attempts. Please wait a moment and try again.': 'धेरै प्रयास भयो। केही समयपछि फेरि प्रयास गर्नुहोस्।',
+  'You do not have permission for this action.': 'तपाईंलाई यो काम गर्ने अनुमति छैन।',
+  'This account is not an administrator.': 'यो खाता एडमिन होइन।',
+
+  // success
+  'Welcome, {n}!': 'स्वागत छ, {n}!',
+  'Your membership number is': 'तपाईंको सदस्यता नम्बर',
+  'Valid until {d}': '{d} सम्म मान्य',
+  'Log in any time with username': 'जुनसुकै बेला यो प्रयोगकर्ता नामबाट लग इन गर्नुहोस्:',
+  'to see your contributions, pay dues and renew': 'योगदान हेर्न, बक्यौता तिर्न र नवीकरण गर्न',
+  'Go to my dashboard': 'मेरो ड्यासबोर्डमा जानुहोस्',
+  'Print': 'प्रिन्ट',
+
+  // login
+  'Use the mobile number or e-mail and the password you created at registration.': 'दर्ता गर्दा बनाएको मोबाइल नम्बर वा इमेल र पासवर्ड प्रयोग गर्नुहोस्।',
+  'Username (mobile or e-mail)': 'प्रयोगकर्ता नाम (मोबाइल वा इमेल)',
+  'Log in': 'लग इन',
+  'Restricted to club administrators.': 'क्लबका एडमिनका लागि मात्र।',
+  'Admin username': 'एडमिन प्रयोगकर्ता नाम',
+  'Log in as admin': 'एडमिनको रूपमा लग इन',
+
+  // ---------- statuses ----------
+  'ACTIVE': 'सक्रिय', 'EXPIRED': 'म्याद सकिएको', 'EXPIRING SOON': 'म्याद सकिँदै', 'PAYMENT DUE': 'भुक्तानी बाँकी',
+  'Membership period has ended': 'सदस्यता अवधि सकियो',
+  'Contribution unpaid for {n} months': '{n} महिनाको योगदान बाँकी',
+  'Expires in {n} day(s)': '{n} दिनमा म्याद सकिन्छ',
+  '{n} month(s) contribution pending': '{n} महिनाको योगदान बाँकी',
+  'Valid for {n} more day(s)': 'अझै {n} दिन मान्य',
+  'Paid': 'तिरिएको', 'Waived': 'छुट दिइएको', 'Payment pending verification': 'भुक्तानी प्रमाणीकरण हुँदै',
+  'Waiver requested': 'छुट अनुरोध गरिएको', 'Due this month': 'यो महिना तिर्नुपर्ने', 'Missed': 'नतिरिएको', 'Upcoming': 'आगामी',
+  'Awaiting admin': 'एडमिनको प्रतीक्षामा',
+  'pending': 'प्रक्रियामा', 'approved': 'स्वीकृत', 'rejected': 'अस्वीकृत',
+
+  // ---------- member dashboard ----------
+  'Your card is EXPIRED — renew soon.': 'तपाईंको कार्डको म्याद सकियो — छिट्टै नवीकरण गर्नुहोस्।',
+  'Your membership is ACTIVE': 'तपाईंको सदस्यता सक्रिय छ',
+  'Namaste, {n}': 'नमस्ते, {n}',
+  'Days until expiry': 'म्याद सकिन बाँकी दिन',
+  'Total contributed': 'जम्मा योगदान',
+  '{n} month(s) paid': '{n} महिना तिरिएको',
+  'Outstanding dues': 'बाँकी रकम',
+  '{a} missed · {b} due now': '{a} नतिरिएको · {b} अहिले तिर्नुपर्ने',
+  'Remaining this term': 'यस अवधिमा बाँकी',
+  'of {x} commitment': 'कुल प्रतिबद्धता {x} मध्ये',
+  'My membership card': 'मेरो सदस्यता कार्ड',
+  'QR link:': 'QR लिङ्क:',
+  'verify my card': 'मेरो कार्ड प्रमाणित गर्नुहोस्',
+  'Renew membership': 'सदस्यता नवीकरण',
+  'Renew for 1 more year': 'थप १ वर्षका लागि नवीकरण गर्नुहोस्',
+  'Clear your outstanding dues of {x} first (or get a waiver approved), then you can renew.': 'पहिले {x} बाँकी रकम चुक्ता गर्नुहोस् (वा छुट स्वीकृत गराउनुहोस्), त्यसपछि नवीकरण गर्न सक्नुहुन्छ।',
+  '{n} month(s) are awaiting admin verification. You can renew once they are approved.': '{n} महिना एडमिन प्रमाणीकरणको प्रतीक्षामा छन्। स्वीकृत भएपछि नवीकरण गर्न सकिन्छ।',
+  'All dues are cleared ✔. Renewal opens {n} days before your expiry date ({d}).': 'सबै बक्यौता चुक्ता ✔। म्याद सकिनुभन्दा {n} दिनअघि ({d}) नवीकरण खुल्छ।',
+  'Your card has expired. Renew now to reactivate it for 12 months from today.': 'तपाईंको कार्डको म्याद सकिएको छ। आजदेखि १२ महिनाका लागि पुनः सक्रिय गर्न नवीकरण गर्नुहोस्।',
+  'All dues cleared ✔. Renew now to extend your card to {d}.': 'सबै बक्यौता चुक्ता ✔। कार्ड {d} सम्म थप्न अहिले नवीकरण गर्नुहोस्।',
+  'My details': 'मेरो विवरण',
+  'Member no.': 'सदस्य नं.', 'Full name': 'पूरा नाम', 'Mobile': 'मोबाइल', 'Permanent': 'स्थायी', 'Temporary': 'अस्थायी', 'Joined': 'सदस्य बनेको',
+  '{a} ({b} BS)': '{a} ({b} वि.सं.)',
+  'Contribution record': 'योगदान विवरण',
+  'Pay contribution': 'योगदान तिर्नुहोस्',
+  'Request waiver / excuse': 'छुट / माफी अनुरोध',
+  'You have {a} to clear ({n} month(s))': 'तपाईंले {a} चुक्ता गर्न बाँकी ({n} महिना)',
+  'All dues cleared — thank you!': 'सबै बक्यौता चुक्ता — धन्यवाद!',
+  'Payments & waiver requests': 'भुक्तानी र छुट अनुरोधहरू',
+  'No payments or requests yet.': 'अहिलेसम्म कुनै भुक्तानी वा अनुरोध छैन।',
+  'Date': 'मिति', 'Type': 'प्रकार', 'Months': 'महिनाहरू', 'Amount': 'रकम', 'Status': 'स्थिति', 'Admin note': 'एडमिन टिप्पणी',
+  'Payment': 'भुक्तानी', 'Waiver': 'छुट',
+  'Reason: {r}': 'कारण: {r}',
+  'Select the months you are paying for. Overdue months are pre-selected. Your payment stays pending until an admin verifies it.':
+    'तिर्न लागेका महिनाहरू छान्नुहोस्। बाँकी महिनाहरू पहिले नै छानिएका छन्। एडमिनले प्रमाणित नगरेसम्म भुक्तानी प्रक्रियामा रहन्छ।',
+  'Payment method': 'भुक्तानी माध्यम',
+  'Transaction / receipt no.': 'कारोबार / रसिद नं.',
+  'e.g. eSewa txn ID': 'जस्तै: eSewa कारोबार ID',
+  'Note (optional)': 'टिप्पणी (ऐच्छिक)',
+  'Total: {x}': 'जम्मा: {x}',
+  'Submit payment': 'भुक्तानी पेश गर्नुहोस्',
+  'Select at least one month.': 'कम्तीमा एक महिना छान्नुहोस्।',
+  'Enter the transaction / receipt number.': 'कारोबार / रसिद नम्बर लेख्नुहोस्।',
+  'Payment submitted — awaiting admin verification.': 'भुक्तानी पेश भयो — एडमिन प्रमाणीकरणको प्रतीक्षामा।',
+  'Nothing to pay — every month is paid, waived or awaiting verification.': 'तिर्न बाँकी छैन — सबै महिना तिरिएको, छुट वा प्रमाणीकरणमा छन्।',
+  'Request a waiver / excuse': 'छुट / माफी अनुरोध गर्नुहोस्',
+  'If you cannot pay for certain months, explain why. The waiver only applies after an admin approves it.': 'कुनै महिनाको योगदान तिर्न नसक्नुभएमा कारण लेख्नुहोस्। एडमिनले स्वीकृत गरेपछि मात्र छुट लागू हुन्छ।',
+  'Reason': 'कारण',
+  'Explain your situation (at least 15 characters)': 'आफ्नो अवस्था खुलाउनुहोस् (कम्तीमा १५ अक्षर)',
+  'Send request to admin': 'एडमिनलाई अनुरोध पठाउनुहोस्',
+  'Please give a reason of at least 15 characters.': 'कम्तीमा १५ अक्षरको कारण लेख्नुहोस्।',
+  'Waiver request sent to admin.': 'छुट अनुरोध एडमिनलाई पठाइयो।',
+  'There are no unpaid months to excuse.': 'छुट माग्नुपर्ने कुनै बाँकी महिना छैन।',
+  'Renewed! Your card is now valid until {d}.': 'नवीकरण भयो! तपाईंको कार्ड अब {d} सम्म मान्य छ।',
+  'Member record not found.': 'सदस्यको विवरण भेटिएन।',
+
+  // ---------- admin ----------
+  'Overview': 'सारांश', 'Members': 'सदस्यहरू', 'Approvals': 'स्वीकृतिहरू', 'Payments': 'भुक्तानीहरू',
+  'Total money raised': 'जम्मा संकलित रकम',
+  '{n} verified payment(s)': '{n} प्रमाणित भुक्तानी',
+  'Total members': 'जम्मा सदस्य',
+  '{n} active': '{n} सक्रिय',
+  'New members (this month)': 'नयाँ सदस्य (यो महिना)',
+  'About to expire / due': 'म्याद सकिन लागेका / बाँकी',
+  'within {n} days or payment due': '{n} दिनभित्र वा भुक्तानी बाँकी',
+  'Expired': 'म्याद सकिएका',
+  'date passed or {n}+ months unpaid': 'मिति नाघेको वा {n}+ महिना नतिरेको',
+  '{n} member(s) owing': '{n} सदस्यको बाँकी',
+  'Pending approvals': 'स्वीकृति बाँकी',
+  'review now': 'अहिले हेर्नुहोस्',
+  'Money raised & new members — last 12 months': 'संकलित रकम र नयाँ सदस्य — पछिल्लो १२ महिना',
+  'Membership status': 'सदस्यता स्थिति',
+  'Members by profession': 'पेशाअनुसार सदस्य',
+  'Dues: paid-up vs owing': 'बक्यौता: चुक्ता बनाम बाँकी',
+  'Members needing attention': 'ध्यान दिनुपर्ने सदस्यहरू',
+  'Money raised (NPR)': 'संकलित रकम (रु.)', 'New members': 'नयाँ सदस्य', 'NPR': 'रु.',
+  'Active': 'सक्रिय', 'Expiring / due': 'म्याद सकिँदै / बाँकी', 'Paid-up': 'चुक्ता', 'Owing dues': 'बक्यौता बाँकी',
+  'Search': 'खोज्नुहोस्',
+  'Name, member no., phone, profession…': 'नाम, सदस्य नं., फोन, पेशा…',
+  'Joined from': 'देखि सदस्य', 'Joined to': 'सम्म सदस्य', 'Member type': 'सदस्यको प्रकार', 'All types': 'सबै प्रकार',
+  'Reset': 'रिसेट', 'Export CSV': 'CSV डाउनलोड',
+  'All': 'सबै', 'New members (30 days)': 'नयाँ सदस्य (३० दिन)', 'Expiring soon': 'म्याद सकिँदै', 'Has dues': 'बक्यौता भएका',
+  '{a} of {b} member(s)': '{b} मध्ये {a} सदस्य',
+  'No members match.': 'मेल खाने सदस्य छैनन्।',
+  'Name': 'नाम', 'Phone': 'फोन', 'Expires': 'म्याद', 'Monthly': 'मासिक', 'Dues': 'बाँकी',
+  '{n} days': '{n} दिन', 'expired': 'म्याद सकिएको',
+  'Member type (shown on card)': 'सदस्यको प्रकार (कार्डमा देखिने)',
+  'Save': 'सेभ गर्नुहोस्',
+  'DOB': 'जन्म मिति', 'Phone / e-mail': 'फोन / इमेल', 'Joined / expires': 'सदस्य बनेको / म्याद', 'Pledge': 'मासिक प्रतिबद्धता', 'Paid / dues': 'तिरेको / बाँकी',
+  '{x} / month': '{x} / महिना',
+  'Member type updated': 'सदस्यको प्रकार अद्यावधिक भयो',
+  'Waiver / excuse requests ({n})': 'छुट / माफी अनुरोध ({n})',
+  'Months:': 'महिना:', "Member's reason:": 'सदस्यको कारण:',
+  'Admin decision reason': 'एडमिन निर्णयको कारण',
+  'Why are you approving / rejecting?': 'किन स्वीकृत / अस्वीकृत गर्दै हुनुहुन्छ?',
+  'Approve': 'स्वीकृत', 'Reject': 'अस्वीकृत',
+  'No pending waiver requests': 'बाँकी छुट अनुरोध छैन',
+  'Payments awaiting verification ({n})': 'प्रमाणीकरण पर्खिरहेका भुक्तानी ({n})',
+  'via {m} · Ref:': '{m} मार्फत · रसिद:',
+  '(required to reject)': '(अस्वीकृत गर्न अनिवार्य)',
+  'Verify & approve': 'प्रमाणित गरी स्वीकृत',
+  'No payments waiting': 'प्रतीक्षामा कुनै भुक्तानी छैन',
+  'Waiver decisions history': 'छुट निर्णयको इतिहास',
+  'Decided': 'निर्णय मिति', 'Member': 'सदस्य', 'Member reason': 'सदस्यको कारण', 'Decision': 'निर्णय', 'Admin reason': 'एडमिनको कारण',
+  'No decisions yet.': 'अहिलेसम्म कुनै निर्णय छैन।',
+  'Please write the reason for this decision.': 'कृपया यो निर्णयको कारण लेख्नुहोस्।',
+  'Waiver approved.': 'छुट स्वीकृत भयो।', 'Waiver rejected.': 'छुट अस्वीकृत भयो।',
+  'Payment approved.': 'भुक्तानी स्वीकृत भयो।', 'Payment rejected.': 'भुक्तानी अस्वीकृत भयो।',
+  'Verified': 'प्रमाणित', 'Awaiting verification': 'प्रमाणीकरण बाँकी', 'Rejected': 'अस्वीकृत',
+  'All payments': 'सबै भुक्तानी', 'Method / ref': 'माध्यम / रसिद', 'No payments yet.': 'अहिलेसम्म भुक्तानी छैन।',
+  'Could not load data: {e}': 'डाटा लोड हुन सकेन: {e}',
+
+  // ---------- verify ----------
+  'Card not found': 'कार्ड भेटिएन',
+  'This QR code does not match any membership card of our club.': 'यो QR कोड हाम्रो क्लबको कुनै पनि सदस्यता कार्डसँग मेल खाएन।',
+  'YOUR CARD IS EXPIRED — RENEW SOON': 'तपाईंको कार्डको म्याद सकियो — छिट्टै नवीकरण गर्नुहोस्',
+  'MEMBERSHIP ABOUT TO EXPIRE': 'सदस्यताको म्याद सकिँदैछ',
+  'MEMBERSHIP ACTIVE': 'सदस्यता सक्रिय',
+  'valid until': 'मान्य अवधि',
+  'Verified {d}': 'प्रमाणित मिति {d}',
+
+  // ---------- data labels ----------
+  'General Member': 'साधारण सदस्य', 'BOD': 'सञ्चालक समिति (BOD)', 'Life Member': 'आजीवन सदस्य', 'Volunteer': 'स्वयंसेवक',
+  'Student': 'विद्यार्थी', 'Not working currently / Job seeker': 'हाल बेरोजगार / रोजगारको खोजीमा', 'Homemaker': 'गृहिणी / गृहस्थ',
+  'Full-time Job (Private sector)': 'पूर्णकालीन जागिर (निजी क्षेत्र)', 'Part-time Job': 'आंशिक जागिर', 'Government Job': 'सरकारी जागिर',
+  'Teacher / Educator': 'शिक्षक / शिक्षाकर्मी', 'Health Worker': 'स्वास्थ्यकर्मी', 'IT / Software Professional': 'आईटी / सफ्टवेयर पेशाकर्मी',
+  'Engineer': 'इन्जिनियर', 'NGO / INGO Staff': 'गैरसरकारी संस्था कर्मचारी', 'Business / Self-employed': 'व्यवसाय / स्वरोजगार',
+  'Farmer / Agriculture': 'किसान / कृषि', 'Researcher': 'अनुसन्धानकर्ता', 'Journalist / Media': 'पत्रकार / सञ्चारकर्मी',
+  'Freelancer': 'फ्रिल्यान्सर', 'Retired': 'अवकाशप्राप्त', 'Other': 'अन्य', 'Other: {x}': 'अन्य: {x}',
+  'eSewa': 'eSewa', 'Khalti': 'Khalti', 'Fonepay / Mobile Banking': 'फोनपे / मोबाइल बैंकिङ', 'Bank Deposit': 'बैंक जम्मा', 'Cash to Treasurer': 'कोषाध्यक्षलाई नगद',
+  'Koshi Province': 'कोशी प्रदेश', 'Madhesh Province': 'मधेश प्रदेश', 'Bagmati Province': 'बागमती प्रदेश', 'Gandaki Province': 'गण्डकी प्रदेश',
+  'Lumbini Province': 'लुम्बिनी प्रदेश', 'Karnali Province': 'कर्णाली प्रदेश', 'Sudurpashchim Province': 'सुदूरपश्चिम प्रदेश',
+  'Bhojpur': 'भोजपुर', 'Dhankuta': 'धनकुटा', 'Ilam': 'इलाम', 'Jhapa': 'झापा', 'Khotang': 'खोटाङ', 'Morang': 'मोरङ', 'Okhaldhunga': 'ओखलढुङ्गा',
+  'Panchthar': 'पाँचथर', 'Sankhuwasabha': 'संखुवासभा', 'Solukhumbu': 'सोलुखुम्बु', 'Sunsari': 'सुनसरी', 'Taplejung': 'ताप्लेजुङ', 'Terhathum': 'तेह्रथुम',
+  'Udayapur': 'उदयपुर', 'Bara': 'बारा', 'Dhanusha': 'धनुषा', 'Mahottari': 'महोत्तरी', 'Parsa': 'पर्सा', 'Rautahat': 'रौतहट', 'Saptari': 'सप्तरी',
+  'Sarlahi': 'सर्लाही', 'Siraha': 'सिराहा', 'Bhaktapur': 'भक्तपुर', 'Chitwan': 'चितवन', 'Dhading': 'धादिङ', 'Dolakha': 'दोलखा', 'Kathmandu': 'काठमाडौं',
+  'Kavrepalanchok': 'काभ्रेपलाञ्चोक', 'Lalitpur': 'ललितपुर', 'Makwanpur': 'मकवानपुर', 'Nuwakot': 'नुवाकोट', 'Ramechhap': 'रामेछाप', 'Rasuwa': 'रसुवा',
+  'Sindhuli': 'सिन्धुली', 'Sindhupalchok': 'सिन्धुपाल्चोक', 'Baglung': 'बागलुङ', 'Gorkha': 'गोरखा', 'Kaski': 'कास्की', 'Lamjung': 'लमजुङ', 'Manang': 'मनाङ',
+  'Mustang': 'मुस्ताङ', 'Myagdi': 'म्याग्दी', 'Nawalpur': 'नवलपुर', 'Parbat': 'पर्वत', 'Syangja': 'स्याङ्जा', 'Tanahun': 'तनहुँ', 'Arghakhanchi': 'अर्घाखाँची',
+  'Banke': 'बाँके', 'Bardiya': 'बर्दिया', 'Dang': 'दाङ', 'Eastern Rukum': 'पूर्वी रुकुम', 'Gulmi': 'गुल्मी', 'Kapilvastu': 'कपिलवस्तु', 'Parasi': 'परासी',
+  'Palpa': 'पाल्पा', 'Pyuthan': 'प्युठान', 'Rolpa': 'रोल्पा', 'Rupandehi': 'रुपन्देही', 'Dailekh': 'दैलेख', 'Dolpa': 'डोल्पा', 'Humla': 'हुम्ला',
+  'Jajarkot': 'जाजरकोट', 'Jumla': 'जुम्ला', 'Kalikot': 'कालिकोट', 'Mugu': 'मुगु', 'Salyan': 'सल्यान', 'Surkhet': 'सुर्खेत', 'Western Rukum': 'पश्चिमी रुकुम',
+  'Achham': 'अछाम', 'Baitadi': 'बैतडी', 'Bajhang': 'बझाङ', 'Bajura': 'बाजुरा', 'Dadeldhura': 'डडेल्धुरा', 'Darchula': 'दार्चुला', 'Doti': 'डोटी',
+  'Kailali': 'कैलाली', 'Kanchanpur': 'कञ्चनपुर',
+  'Baisakh (बैशाख)': 'बैशाख', 'Jestha (जेठ)': 'जेठ', 'Asar (असार)': 'असार', 'Shrawan (साउन)': 'साउन', 'Bhadra (भदौ)': 'भदौ', 'Asoj (असोज)': 'असोज',
+  'Kartik (कात्तिक)': 'कात्तिक', 'Mangsir (मंसिर)': 'मंसिर', 'Poush (पुष)': 'पुष', 'Magh (माघ)': 'माघ', 'Falgun (फागुन)': 'फागुन', 'Chaitra (चैत)': 'चैत',
+  'NPR {n}': 'रु. {n}',
+};
+
+// ---------------------------------------------------------------------------
+const MONTHS = { Jan: 'जनवरी', Feb: 'फेब्रुअरी', Mar: 'मार्च', Apr: 'अप्रिल', May: 'मे', Jun: 'जुन', Jul: 'जुलाई', Aug: 'अगस्ट', Sep: 'सेप्टेम्बर', Sept: 'सेप्टेम्बर', Oct: 'अक्टोबर', Nov: 'नोभेम्बर', Dec: 'डिसेम्बर',
+  January: 'जनवरी', February: 'फेब्रुअरी', March: 'मार्च', April: 'अप्रिल', June: 'जुन', July: 'जुलाई', August: 'अगस्ट', September: 'सेप्टेम्बर', October: 'अक्टोबर', November: 'नोभेम्बर', December: 'डिसेम्बर' };
+const DATE_RE = new RegExp(`^(\\d{1,2} )?(${Object.keys(MONTHS).join('|')})( \\d{2}| \\d{4})?$`);
+
+const PATTERNS = Object.keys(NE).filter((k) => /\{\w+\}/.test(k))
+  .sort((a, b) => b.length - a.length)
+  .map((k) => {
+    const names = [];
+    const src = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\{(\w+)\\\}/g, (_, n) => { names.push(n); return '(.+?)'; });
+    return { re: new RegExp('^' + src + '$'), names, out: NE[k], endsWithVar: /\}$/.test(k) };
+  });
+
+function core(s, depth = 0) {
+  if (NE[s] !== undefined) return NE[s];
+  const d = s.match(DATE_RE);
+  if (d) return (d[1] || '') + MONTHS[d[2]] + (d[3] || '');
+  if (depth > 1) return null;
+  for (const p of PATTERNS) {
+    const m = s.match(p.re);
+    if (!m) continue;
+    // don't let a trailing "." / "!" leak into a value at the end of a pattern
+    if (p.endsWithVar && /[.!?]$/.test(m[m.length - 1])) continue;
+    let out = p.out;
+    p.names.forEach((n, i) => { const v = m[i + 1]; out = out.replace(`{${n}}`, core(v, depth + 1) ?? v); });
+    return out;
+  }
+  // comma-separated lists such as addresses or month lists: translate each part
+  if (s.includes(', ')) {
+    const parts = s.split(', ');
+    const outs = parts.map((p) => core(p, depth + 1));
+    if (outs.some((o) => o != null)) return parts.map((p, i) => outs[i] ?? p).join(', ');
+  }
+  return null;
+}
+
+/** Translate a string to the current language (returns input for English / unknown text). */
+export function tr(s) {
+  if (LANG !== 'ne' || !s) return s;
+  const whole = String(s).trim();
+  if (NE[whole] !== undefined) return String(s).replace(whole, NE[whole]);
+  const m = String(s).match(/^([^\p{L}\p{N}]*)([\s\S]*?)([^\p{L}\p{N})!.?]*)$/u);
+  if (!m || !m[2]) return s;
+  const c = m[2].trim();
+  let t = core(c);
+  if (t == null) {
+    const mm = c.match(/^([\s\S]*?)([.!?)]+)$/);
+    const t2 = mm && core(mm[1]);
+    if (t2 != null) t = t2 + mm[2];
+  }
+  if (t == null) return s;
+  const lead = m[1], trail = m[3];
+  const ws = m[2].match(/^\s*/)[0], we = m[2].match(/\s*$/)[0];
+  return lead + ws + t + we + trail;
+}
+
+export let LANG = (() => { try { return localStorage.getItem('lang') === 'ne' ? 'ne' : 'en'; } catch { return 'en'; } })();
+
+// ---------------------------------------------------------------------------
+//  DOM translation with originals kept so we can switch back
+// ---------------------------------------------------------------------------
+const textRec = new Map();   // TextNode -> { orig, cur }
+const attrRec = new Map();   // Element -> { attr: { orig, cur } }
+const ATTRS = ['placeholder', 'title', 'aria-label'];
+const SKIP = 'script,style,.mcard,[data-no-i18n],.mono,textarea';
+
+function doText(n) {
+  if (!n.parentElement || n.parentElement.closest(SKIP)) return;
+  const rec = textRec.get(n);
+  if (rec && n.data === rec.cur) return;
+  const orig = n.data;
+  if (!orig.trim()) return;
+  const cur = tr(orig);
+  textRec.set(n, { orig, cur });
+  if (cur !== orig) n.data = cur;
+}
+function doAttrs(el) {
+  if (el.closest(SKIP)) return;
+  for (const a of ATTRS) {
+    if (!el.hasAttribute(a)) continue;
+    const recs = attrRec.get(el) || {};
+    const v = el.getAttribute(a);
+    if (recs[a] && recs[a].cur === v) continue;
+    const cur = tr(v);
+    recs[a] = { orig: v, cur };
+    attrRec.set(el, recs);
+    if (cur !== v) el.setAttribute(a, cur);
+  }
+}
+function walk(root) {
+  if (root.nodeType === 3) return doText(root);
+  if (root.nodeType !== 1) return;
+  doAttrs(root);
+  const it = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
+  let n;
+  while ((n = it.nextNode())) n.nodeType === 3 ? doText(n) : doAttrs(n);
+}
+
+let titleOrig = null;
+function applyAll() {
+  // prune detached nodes
+  for (const n of textRec.keys()) if (!n.isConnected) textRec.delete(n);
+  for (const e of attrRec.keys()) if (!e.isConnected) attrRec.delete(e);
+  if (LANG === 'en') {
+    textRec.forEach((r, n) => { n.data = r.orig; r.cur = r.orig; });
+    attrRec.forEach((recs, el) => Object.entries(recs).forEach(([a, r]) => { el.setAttribute(a, r.orig); r.cur = r.orig; }));
+  } else {
+    textRec.forEach((r, n) => { r.cur = tr(r.orig); n.data = r.cur; });
+    attrRec.forEach((recs, el) => Object.entries(recs).forEach(([a, r]) => { r.cur = tr(r.orig); el.setAttribute(a, r.cur); }));
+    walk(document.body);
+  }
+  if (titleOrig === null) titleOrig = document.title;
+  document.title = tr(titleOrig);
+  document.documentElement.lang = LANG;
+}
+
+export function startI18n() {
+  walk(document.body);
+  applyAll();
+  new MutationObserver((muts) => {
+    for (const m of muts) {
+      if (m.type === 'characterData') doText(m.target);
+      else if (m.type === 'attributes') doAttrs(m.target);
+      else m.addedNodes.forEach(walk);
+    }
+  }).observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ATTRS });
+  document.documentElement.classList.remove('i18n-pending');
+}
+
+export function setLang(l) {
+  LANG = l === 'ne' ? 'ne' : 'en';
+  try { localStorage.setItem('lang', LANG); } catch {}
+  applyAll();
+  window.dispatchEvent(new CustomEvent('langchange', { detail: LANG }));
+}
