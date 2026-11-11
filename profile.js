@@ -6,7 +6,7 @@ import { PROFESSIONS, DONATION_TIERS, PROVINCES, RULES, MEMBER_TYPES, BLOOD_GROU
 import { friendlyError } from './store.js';
 import { cardData } from './common.js';
 import { createDobPicker } from './datepicker.js';
-import { ageOn, addYears, monthKey, uid, compressImage, esc, npr, toast, checkUpload } from './utils.js';
+import { ageOn, addYears, monthKey, addMonths, monthLabel, uid, compressImage, esc, npr, toast, checkUpload } from './utils.js';
 import { openPaymentPopup } from './payui.js';
 
 export function renderProfileForm(root, store, sess, onDone) {
@@ -72,7 +72,19 @@ export function renderProfileForm(root, store, sess, onDone) {
       <fieldset>
         <legend><span class="n">5</span> Monthly contribution</legend>
         <p class="hint" id="tierHint" style="margin-top:0">Choose your profession first to see the contribution options.</p>
-        <div class="tiers" id="tiers"></div>
+        <div class="contrib">
+          <div class="tiers" id="tiers"></div>
+          <div class="cycle" id="cycleBox" hidden>
+            <p class="cycle-title">Pay for</p>
+            <div class="cycle-opts" id="cycles">
+              <label><input type="radio" name="cycle" value="1" checked><span>Monthly<small>1 month</small></span></label>
+              <label><input type="radio" name="cycle" value="3"><span>3 months</span></label>
+              <label><input type="radio" name="cycle" value="6"><span>6 months</span></label>
+              <label><input type="radio" name="cycle" value="12"><span>1 year<small>12 months</small></span></label>
+            </div>
+            <div class="calc" id="calc"></div>
+          </div>
+        </div>
         <div class="pay-status" id="payStatus"></div>
       </fieldset>
 
@@ -141,33 +153,49 @@ export function renderProfileForm(root, store, sess, onDone) {
       ? (p.employed ? 'As a working professional, choose your monthly donation:' : 'As a student / not currently employed, choose any monthly donation that suits you:')
       : 'Choose your profession first to see the contribution options.';
     $('#tiers').innerHTML = tiers.map((t) => `<label><input type="radio" name="pledge" value="${t}"><span>${npr(t)}<small>per month · ${npr(t * 12)}/yr</small></span></label>`).join('');
+    $('#cycleBox').hidden = !p;
     firstPay = null; showPayStatus();
   });
 
-  // choosing an amount opens the payment popup (QR + receipt upload)
+  // ---- how many months to pay now: 1, 3, 6 or 12 ----
+  const startMonth = monthKey(new Date());
+  const pledgeNow = () => Number(form.querySelector('input[name=pledge]:checked')?.value || 0);
+  const cycleNow = () => Number(form.querySelector('input[name=cycle]:checked')?.value || 1);
+  const coverLabel = (n) => (n === 1 ? monthLabel(startMonth) : `${monthLabel(startMonth)} – ${monthLabel(addMonths(startMonth, n - 1))}`);
+  function showCalc() {
+    const p = pledgeNow(), n = cycleNow();
+    $('#calc').innerHTML = p
+      ? `<span class="calc-line">${npr(p)} × ${n} month(s)</span><b class="calc-total">${npr(p * n)}</b><small>Covers ${coverLabel(n)}</small>`
+      : '<small>Choose a monthly amount to see the total.</small>';
+  }
+
+  // choosing an amount or a period opens the payment popup (QR + receipt upload)
   let firstPay = null;
+  const firstPayValid = () => firstPay && firstPay.pledge === pledgeNow() && firstPay.cycle === cycleNow();
   function showPayStatus() {
+    showCalc();
     const box = $('#payStatus');
     const sel = form.querySelector('input[name=pledge]:checked');
-    if (firstPay && sel && firstPay.amount === Number(sel.value)) {
+    if (sel && firstPayValid()) {
       box.className = 'pay-status ok';
-      box.innerHTML = `<span>✔ Receipt uploaded for ${npr(firstPay.amount)} (first month).</span> <a href="#" id="payAgain">Change</a>`;
-      box.querySelector('#payAgain').onclick = (e) => { e.preventDefault(); askPayment(firstPay.amount); };
+      box.innerHTML = `<span>✔ Receipt uploaded for ${npr(firstPay.amount)} (${firstPay.cycle} month(s)).</span> <a href="#" id="payAgain">Change</a>`;
+      box.querySelector('#payAgain').onclick = (e) => { e.preventDefault(); askPayment(); };
     } else if (sel) {
       box.className = 'pay-status no';
       box.innerHTML = `<span>⚠ Payment receipt not uploaded yet.</span> <a href="#" id="payNow">Pay now</a>`;
-      box.querySelector('#payNow').onclick = (e) => { e.preventDefault(); askPayment(Number(sel.value)); };
+      box.querySelector('#payNow').onclick = (e) => { e.preventDefault(); askPayment(); };
     } else { box.className = 'pay-status'; box.innerHTML = ''; }
   }
-  async function askPayment(amount) {
-    const r = await openPaymentPopup({ amount, title: 'Pay your first month' });
-    if (r) firstPay = { amount, ...r };
+  async function askPayment() {
+    showCalc();
+    const pledge = pledgeNow(), cycle = cycleNow(); if (!pledge) return showPayStatus();
+    const amount = pledge * cycle;
+    const r = await openPaymentPopup({ amount, title: cycle === 1 ? 'Pay your first month' : `Pay for ${cycle} months` });
+    if (r) firstPay = { amount, pledge, cycle, ...r };
     showPayStatus();
   }
-  $('#tiers').addEventListener('change', (e) => {
-    if (e.target.name !== 'pledge') return;
-    askPayment(Number(e.target.value));
-  });
+  $('#tiers').addEventListener('change', (e) => { if (e.target.name === 'pledge') askPayment(); });
+  $('#cycles').addEventListener('change', () => { if (pledgeNow()) askPayment(); else showPayStatus(); });
   $('#agree').addEventListener('change', showPayStatus);
 
   // photo
@@ -210,7 +238,7 @@ export function renderProfileForm(root, store, sess, onDone) {
     if (!photoData) return bad(drop, 'Please upload your photo.');
     const pledgeEl = form.querySelector('input[name=pledge]:checked');
     if (!pledgeEl) return bad($('#tiers'), 'Please choose a monthly contribution.');
-    if (!firstPay || firstPay.amount !== Number(pledgeEl.value)) return bad($('#payStatus'), 'Please pay the first month and upload the payment receipt.');
+    if (!firstPayValid()) return bad($('#payStatus'), 'Please pay for the selected period and upload the payment receipt.');
     if (!$('#agree').checked) return bad($('#agree'), 'Please confirm the declaration.');
 
     const applied = new Date();
@@ -227,6 +255,7 @@ export function renderProfileForm(root, store, sess, onDone) {
       profession: F('profession').value === 'Other' ? `Other: ${F('professionOther').value.trim()}` : F('profession').value,
       employed: !!prof?.employed,
       pledge: Number(pledgeEl.value),
+      payCycle: firstPay.cycle,
       permanentAddress: readAddr('permanent'),
       temporaryAddress: readAddr('temporary'),
       photo: photoData,
@@ -246,16 +275,18 @@ export function renderProfileForm(root, store, sess, onDone) {
     const btn = $('#regBtn'); btn.disabled = true; btn.textContent = 'Creating your membership…';
     try {
       const saved = await store.completeProfile(member, pub);
-      // first month's contribution, paid with the uploaded receipt
+      // first payment (1, 3, 6 or 12 months), paid with the uploaded receipt
       const now = new Date().toISOString(), first = monthKey(applied);
+      const months = Array.from({ length: firstPay.cycle }, (_, i) => addMonths(first, i));
+      const last = months[months.length - 1];
       try {
         await store.createPayment({
-          uid: saved.uid, memberNo: saved.memberNo, name: saved.fullName, months: [first], amount: saved.pledge,
+          uid: saved.uid, memberNo: saved.memberNo, name: saved.fullName, months, amount: saved.pledge * months.length,
           method: firstPay.method, ref: firstPay.ref, status: 'approved', reviewed: false, createdAt: now, paidAt: now,
         }, firstPay.receipt);
-        await store.updateMember(saved.uid, { paidThrough: first });
-        await store.updatePublicCard(saved.cardToken, { paidThrough: first });
-        saved.paidThrough = first;
+        await store.updateMember(saved.uid, { paidThrough: last });
+        await store.updatePublicCard(saved.cardToken, { paidThrough: last });
+        saved.paidThrough = last;
       } catch (pe) {
         toast('Membership created, but the payment could not be saved. Please pay again from your dashboard.', 'error');
       }

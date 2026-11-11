@@ -259,7 +259,11 @@ let lockWatch;
  *  backdropClose: false -> clicking outside does NOT close it; only the ✕ button
  *  (or a [data-close] button inside) closes it. Used for payment popups.
  */
-export function modal(html, { wide = false, backdropClose = true } = {}) {
+const MODAL_DEFAULTS = { backdropClose: true };
+/** e.g. setModalDefaults({ backdropClose: false }) on a page where popups close only with ✕ */
+export function setModalDefaults(d) { Object.assign(MODAL_DEFAULTS, d); }
+
+export function modal(html, { wide = false, backdropClose = MODAL_DEFAULTS.backdropClose } = {}) {
   const wrap = document.createElement('div');
   wrap.className = 'modal-backdrop';
   wrap.innerHTML = `<div class="modal ${wide ? 'modal-wide' : ''}" role="dialog" aria-modal="true">

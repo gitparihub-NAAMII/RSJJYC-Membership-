@@ -3,7 +3,9 @@ import { friendlyError } from './store.js';
 import { initPage, cardData } from './common.js';
 import { tr } from './i18n.js';
 import { mountCard, downloadButtons, wireDownloads } from './card.js';
-import { buildLedger, cardStatus, esc, npr, fmtDate, isoDate, modal, toast, monthKey, addMonths, monthLabel, STATUS_TEXT, DAY, showReceipt } from './utils.js';
+import { buildLedger, cardStatus, esc, npr, fmtDate, isoDate, modal, toast, monthKey, addMonths, monthLabel, STATUS_TEXT, DAY, showReceipt, setModalDefaults } from './utils.js';
+// Admin popups close only with the ✕ button (clicking outside does nothing)
+setModalDefaults({ backdropClose: false });
 import { nextDue, milestone, adminMessage } from './reminders.js';
 const needsReview = (p) => p.status === 'pending' || (p.status === 'approved' && p.reviewed === false);
 
