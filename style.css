@@ -676,3 +676,43 @@ button, .btn, .app-choice, .tabs button, .chips button, .side-nav button, .stat.
 .calc-line { display: block; color: var(--muted); font-size: 14px; }
 .calc-total { display: block; font-size: 26px; color: var(--green); line-height: 1.2; margin: 2px 0; }
 .calc small { color: var(--muted); font-size: 12.5px; }
+
+/* v12: amount + period -> total -> Pay now */
+.tiers-box { min-width: 0; }
+.cycle-title { display: flex; align-items: center; gap: 8px; }
+.stepno { width: 22px; height: 22px; border-radius: 50%; background: var(--crimson); color: #fff; font-size: 12px; font-weight: 700; display: inline-grid; place-items: center; flex: none; }
+.cycle .calc { display: none; }
+.pay-summary { margin-top: 16px; padding: 14px; border-radius: 14px; background: var(--surface-2); border: 1px solid var(--line); display: grid; gap: 12px; }
+.pay-summary .calc { margin: 0; }
+.pay-summary .pay-status { margin: 0; }
+.pay-now { font-size: 16px; padding: 14px 18px; border-radius: 12px; }
+
+/* v12: one tidy top bar on phones — logo left, language + theme + log out right */
+@media (max-width: 600px) {
+  .topbar .in { flex-wrap: nowrap !important; gap: 6px; padding: 8px 10px; }
+  .brand { gap: 7px; flex: 0 1 auto; min-width: 0; }
+  .brand img { width: 34px; height: 34px; }
+  .brand b { font-size: 14.5px; }
+  .brand small { display: none; }
+  .topbar .sp { flex: 1 1 0; min-width: 0; }
+  .tb-ctrl { gap: 5px; flex: none; }
+  .lang-switch button { padding: 5px 8px; font-size: 11.5px; }
+  .lang-switch button[data-lang="ne"] { font-size: 12.5px; }
+  .theme-btn { width: 32px; height: 32px; font-size: 14px; flex: none; }
+  .demo-pill { display: none !important; }
+  .topbar .btn-sm, #logout { padding: 7px 10px; font-size: 12.5px; flex: none; white-space: nowrap; }
+  .install-btn { padding: 6px 9px; font-size: 11.5px; }
+}
+@media (max-width: 340px) { .brand b { display: none; } }
+@media (max-width: 600px) {
+  fieldset { padding: 14px 12px; }
+  .tiers { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .tiers label span { min-width: 0; padding: 11px 6px; }
+  .cycle { padding: 12px; }
+  .pay-summary { padding: 12px; }
+  .calc-total { font-size: 24px; }
+  /* payment window as a phone-style sheet */
+  .modal .pay-qr { flex-direction: column; text-align: center; }
+  .modal .pay-qr-box { margin: 0 auto; }
+  .modal .pay-total b { font-size: 19px; }
+}

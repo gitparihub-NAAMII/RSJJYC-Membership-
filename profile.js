@@ -73,19 +73,25 @@ export function renderProfileForm(root, store, sess, onDone) {
         <legend><span class="n">5</span> Monthly contribution</legend>
         <p class="hint" id="tierHint" style="margin-top:0">Choose your profession first to see the contribution options.</p>
         <div class="contrib">
-          <div class="tiers" id="tiers"></div>
+          <div class="tiers-box">
+            <p class="cycle-title" id="tiersTitle" hidden><span class="stepno">1</span> Amount per month</p>
+            <div class="tiers" id="tiers"></div>
+          </div>
           <div class="cycle" id="cycleBox" hidden>
-            <p class="cycle-title">Pay for</p>
+            <p class="cycle-title"><span class="stepno">2</span> Pay for</p>
             <div class="cycle-opts" id="cycles">
               <label><input type="radio" name="cycle" value="1" checked><span>Monthly<small>1 month</small></span></label>
               <label><input type="radio" name="cycle" value="3"><span>3 months</span></label>
               <label><input type="radio" name="cycle" value="6"><span>6 months</span></label>
               <label><input type="radio" name="cycle" value="12"><span>1 year<small>12 months</small></span></label>
             </div>
-            <div class="calc" id="calc"></div>
           </div>
         </div>
-        <div class="pay-status" id="payStatus"></div>
+        <div class="pay-summary" id="paySummary" hidden>
+          <div class="calc" id="calc"></div>
+          <button type="button" class="btn btn-green btn-block pay-now" id="payNowBtn">Pay now</button>
+          <div class="pay-status" id="payStatus"></div>
+        </div>
       </fieldset>
 
       <label class="check" style="margin-bottom:16px"><input type="checkbox" id="agree"> I confirm the information above is correct and agree to contribute monthly to keep my membership active.</label>
@@ -154,6 +160,7 @@ export function renderProfileForm(root, store, sess, onDone) {
       : 'Choose your profession first to see the contribution options.';
     $('#tiers').innerHTML = tiers.map((t) => `<label><input type="radio" name="pledge" value="${t}"><span>${npr(t)}<small>per month · ${npr(t * 12)}/yr</small></span></label>`).join('');
     $('#cycleBox').hidden = !p;
+    $('#tiersTitle').hidden = !p;
     firstPay = null; showPayStatus();
   });
 
@@ -169,33 +176,36 @@ export function renderProfileForm(root, store, sess, onDone) {
       : '<small>Choose a monthly amount to see the total.</small>';
   }
 
-  // choosing an amount or a period opens the payment popup (QR + receipt upload)
+  // 1) choose amount, 2) choose period -> total is shown -> "Pay now" opens the QR payment
   let firstPay = null;
   const firstPayValid = () => firstPay && firstPay.pledge === pledgeNow() && firstPay.cycle === cycleNow();
   function showPayStatus() {
     showCalc();
-    const box = $('#payStatus');
     const sel = form.querySelector('input[name=pledge]:checked');
-    if (sel && firstPayValid()) {
+    $('#paySummary').hidden = !sel;
+    const box = $('#payStatus'), btn = $('#payNowBtn');
+    if (!sel) { box.className = 'pay-status'; box.innerHTML = ''; return; }
+    if (firstPayValid()) {
       box.className = 'pay-status ok';
-      box.innerHTML = `<span>✔ Receipt uploaded for ${npr(firstPay.amount)} (${firstPay.cycle} month(s)).</span> <a href="#" id="payAgain">Change</a>`;
-      box.querySelector('#payAgain').onclick = (e) => { e.preventDefault(); askPayment(); };
-    } else if (sel) {
+      box.innerHTML = `<span>✔ Receipt uploaded for ${npr(firstPay.amount)} (${firstPay.cycle} month(s)).</span>`;
+      btn.className = 'btn btn-ghost btn-block pay-now'; btn.textContent = 'Change payment / upload another receipt';
+    } else {
       box.className = 'pay-status no';
-      box.innerHTML = `<span>⚠ Payment receipt not uploaded yet.</span> <a href="#" id="payNow">Pay now</a>`;
-      box.querySelector('#payNow').onclick = (e) => { e.preventDefault(); askPayment(); };
-    } else { box.className = 'pay-status'; box.innerHTML = ''; }
+      box.innerHTML = '<span>⚠ Payment receipt not uploaded yet.</span>';
+      btn.className = 'btn btn-green btn-block pay-now'; btn.textContent = `Pay now · ${npr(pledgeNow() * cycleNow())}`;
+    }
   }
   async function askPayment() {
-    showCalc();
     const pledge = pledgeNow(), cycle = cycleNow(); if (!pledge) return showPayStatus();
     const amount = pledge * cycle;
     const r = await openPaymentPopup({ amount, title: cycle === 1 ? 'Pay your first month' : `Pay for ${cycle} months` });
     if (r) firstPay = { amount, pledge, cycle, ...r };
     showPayStatus();
   }
-  $('#tiers').addEventListener('change', (e) => { if (e.target.name === 'pledge') askPayment(); });
-  $('#cycles').addEventListener('change', () => { if (pledgeNow()) askPayment(); else showPayStatus(); });
+  // picking an amount or a period only updates the total — no popup
+  $('#tiers').addEventListener('change', showPayStatus);
+  $('#cycles').addEventListener('change', showPayStatus);
+  $('#payNowBtn').addEventListener('click', askPayment);
   $('#agree').addEventListener('change', showPayStatus);
 
   // photo
