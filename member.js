@@ -28,6 +28,39 @@ async function load() {
   L = buildLedger(M, payments, waivers);
   ST = cardStatus({ ...M, paidThrough: L.paidThrough });
   render();
+  goLive();
+}
+
+// ---------- real-time updates (no refresh needed) ----------
+let live = false;
+function goLive() {
+  if (live) return; live = true;
+  let reloadTimer;
+  const reload = () => { clearTimeout(reloadTimer); reloadTimer = setTimeout(() => load().catch(() => {}), 400); };
+  // the first callback of each listener only reports what is already on screen
+  const after = (fn) => { let first = true; return (v) => { if (first) { first = false; return; } fn(v); }; };
+  store.watch('notifications', sess.uid, after((list) => {
+    const fresh = list.filter((n) => !n.read && !notes.some((o) => o.id === n.id));
+    notes = list; refreshBell();
+    fresh.forEach((n) => toast(`${n.icon || '🔔'} ${n.title}`, 'info'));
+  }));
+  store.watch('announcements', null, after((list) => {
+    const fresh = list.filter((a) => !anns.some((o) => o.id === a.id));
+    anns = list; refreshBell();
+    fresh.forEach((a) => toast(`📢 ${a.title}`, 'info'));
+  }));
+  // card status, payments, waivers and change requests -> redraw the dashboard
+  store.watchDoc('members', sess.uid, after(reload));
+  store.watch('payments', sess.uid, after(reload));
+  store.watch('waivers', sess.uid, after(reload));
+  store.watch('changeRequests', sess.uid, after(reload));
+}
+function refreshBell() {
+  if (!bell || !M) return;
+  const items = memberItems(nextDue(M, L));
+  bell.set(items);
+  phoneNotify(M.uid, items.filter((i) => i.kind === 'note' || i.kind === 'ann'));
+  saveForBackground();
 }
 
 function welcome(m) {

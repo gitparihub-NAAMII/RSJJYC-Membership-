@@ -174,6 +174,13 @@ async function firebaseBackend() {
     async createAnnouncement(a) { const r = await F.addDoc(F.collection(db, 'announcements'), { ...a, createdAt: new Date().toISOString() }); return r.id; },
     listAnnouncements: () => all(F.collection(db, 'announcements')),
     deleteAnnouncement: (id) => F.deleteDoc(d('announcements', id)),
+
+    // ---- live updates (real time): cb(list) runs now and on every change; returns stop() ----
+    watch(col, uid, cb) {
+      const q = uid ? F.query(F.collection(db, col), F.where('uid', '==', uid)) : F.collection(db, col);
+      return F.onSnapshot(q, (s) => cb(s.docs.map((x) => ({ id: x.id, ...x.data() }))), () => {});
+    },
+    watchDoc(col, id, cb) { return F.onSnapshot(d(col, id), (s) => cb(s.exists() ? { id: s.id, ...s.data() } : null), () => {}); },
   };
 }
 
@@ -185,7 +192,12 @@ function demoBackend() {
   const SKEY = 'rsjjyc_demo_session';
   const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } };
   const db = Object.assign({ users: {}, members: {}, publicCards: {}, payments: {}, receipts: {}, waivers: {}, counters: {}, uniques: {}, changeRequests: {}, notifications: {}, announcements: {} }, load());
-  const save = () => localStorage.setItem(KEY, JSON.stringify(db));
+  // live-update watchers (demo): fire after saves in this tab and on changes from other tabs
+  const watchers = new Set();
+  const fire = () => watchers.forEach((w) => { const k = w.key(); if (k !== w.last) { w.last = k; w.cb(); } });
+  const addWatcher = (key, cb) => { const w = { key, cb, last: null }; watchers.add(w); w.last = key(); setTimeout(cb, 0); return () => watchers.delete(w); };
+  window.addEventListener('storage', (e) => { if (e.key === KEY) { const fresh = load(); Object.keys(db).forEach((k) => (db[k] = fresh[k] || {})); fire(); } });
+  const save = () => { localStorage.setItem(KEY, JSON.stringify(db)); setTimeout(fire, 0); };
   const getSession = () => { try { return JSON.parse(localStorage.getItem(SKEY)); } catch { return null; } };
   const setSession = (s) => { s ? localStorage.setItem(SKEY, JSON.stringify(s)) : localStorage.removeItem(SKEY); return s; };
   const clone = (x) => (x ? JSON.parse(JSON.stringify(x)) : null);
@@ -288,6 +300,15 @@ function demoBackend() {
     async createAnnouncement(a) { const id = rid(16); db.announcements[id] = { ...a, id, createdAt: new Date().toISOString() }; save(); return id; },
     async listAnnouncements() { return clone(Object.values(db.announcements)); },
     async deleteAnnouncement(id) { delete db.announcements[id]; save(); },
+    // live updates in demo mode: changes from this tab or other tabs of the same browser
+    watch(col, uid, cb) {
+      const get = () => Object.values(db[col] || {}).filter((x) => !uid || x.uid === uid).map((x) => ({ ...x }));
+      return addWatcher(() => JSON.stringify(get()), () => cb(get()));
+    },
+    watchDoc(col, id, cb) {
+      const get = () => (db[col]?.[id] ? { id, ...db[col][id] } : null);
+      return addWatcher(() => JSON.stringify(get()), () => cb(get()));
+    },
   };
 }
 

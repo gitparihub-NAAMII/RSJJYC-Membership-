@@ -33,6 +33,38 @@ async function load() {
   const nRem = toRemind().length; const rb = document.getElementById('rmBadge'); rb.hidden = !nRem; rb.textContent = nRem;
   refreshAdminBell();
   show(current);
+  goLive();
+}
+
+// ---------- real-time updates (no refresh needed) ----------
+let live = false, livePending = false;
+// don't redraw under the admin's hands: a popup is open or they are typing in the page
+const busy = () => !!document.querySelector('.modal-backdrop')
+  || (view.contains(document.activeElement) && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName))
+  || [...view.querySelectorAll('textarea')].some((t) => t.value.trim());
+async function liveRefresh() {
+  const before = new Set(adminItems().map((i) => i.id));
+  [members, payments, waivers, changeReqs] = await Promise.all([store.listMembers(), store.listPayments(), store.listWaivers(), store.listChangeRequests().catch(() => [])]);
+  members.forEach(enrich);
+  members.sort((a, b) => b.joinMs - a.joinMs);
+  const pend = payments.filter(needsReview).length + waivers.filter((w) => w.status === 'pending').length + changeReqs.filter((c) => c.status === 'pending').length;
+  const b = document.getElementById('apBadge'); b.hidden = !pend; b.textContent = pend;
+  const nRem = toRemind().length; const rb = document.getElementById('rmBadge'); rb.hidden = !nRem; rb.textContent = nRem;
+  refreshAdminBell();
+  adminItems().filter((i) => !before.has(i.id)).forEach((i) => toast(`${i.icon} ${i.title}`, 'info'));
+  if (current === 'announce') return; // that page has nothing that changes from member actions
+  if (busy()) { livePending = true; return; }
+  livePending = false;
+  const y = window.scrollY; show(current); window.scrollTo(0, y);
+}
+function goLive() {
+  if (live) return; live = true;
+  let t;
+  const kick = () => { clearTimeout(t); t = setTimeout(() => liveRefresh().catch(() => {}), 400); };
+  const after = () => { let first = true; return () => { if (first) { first = false; return; } kick(); }; };
+  ['members', 'payments', 'waivers', 'changeRequests'].forEach((col) => store.watch(col, null, after()));
+  // apply held-back updates once the admin closes the popup / leaves the field
+  setInterval(() => { if (livePending && !busy()) { livePending = false; const y = window.scrollY; show(current); window.scrollTo(0, y); } }, 1500);
 }
 function enrich(m) {
   m._L = buildLedger(m, payments.filter((p) => p.uid === m.uid), waivers.filter((w) => w.uid === m.uid));
