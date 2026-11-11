@@ -1,7 +1,7 @@
 // Service worker for the installable app.
 // "Network first": always load the newest files from the internet, and only use
 // the saved copy when the phone is offline. Firebase / CDN requests are untouched.
-const CACHE = 'rsjjyc-v22';
+const CACHE = 'rsjjyc-v24';
 const CORE = ['index.html', 'member.html', 'admin.html', 'verify.html', 'pay-soon.html', 'install.html', 'style.css', 'logo.png', 'icon-192.png'];
 
 self.addEventListener('install', (e) => {
@@ -29,7 +29,7 @@ self.addEventListener('fetch', (e) => {
 });
 
 // ---------------------------------------------------------------------------
-// Payment reminders (7, 5, 3 days before the due date, then daily while overdue)
+// Payment reminders (7, 3, 1 day(s) before the due date, then daily while overdue)
 // The member dashboard saves the next due date in the 'rsjjyc-reminders' cache.
 // ---------------------------------------------------------------------------
 const RC = 'rsjjyc-reminders';
@@ -45,7 +45,7 @@ async function dueCheck() {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const days = Math.round((new Date(y, m - 1, d) - today) / 86400000);
-  const ms = days < 0 ? 'overdue' : days <= 3 ? 3 : days <= 5 ? 5 : days <= 7 ? 7 : null;
+  const ms = days < 0 ? 'overdue' : days <= 1 ? 1 : days <= 3 ? 3 : days <= 7 ? 7 : null;
   if (!ms) return;
   const key = ms === 'overdue' ? `${info.month}-overdue-${today.toISOString().slice(0, 10)}` : `${info.month}-${ms}`;
   const sent = (await rjson('sent')) || {};
@@ -68,3 +68,23 @@ self.addEventListener('notificationclick', (e) => {
     return w ? w.navigate(url).then((c) => c && c.focus()) : self.clients.openWindow(url);
   }));
 });
+
+// ---------------------------------------------------------------------------
+// New announcements in the background (installed app, Android Chrome).
+// Announcements are public, so they can be read without signing in.
+// ---------------------------------------------------------------------------
+async function announcementCheck() {
+  const fb = await rjson('fb'); if (!fb || !fb.projectId) return;
+  const seen = new Set((await rjson('ann-seen')) || []);
+  const url = `https://firestore.googleapis.com/v1/projects/${fb.projectId}/databases/(default)/documents/announcements?pageSize=10&key=${fb.apiKey}`;
+  const res = await fetch(url); if (!res.ok) return;
+  const docs = ((await res.json()).documents || []).map((d) => ({
+    id: d.name.split('/').pop(), title: d.fields?.title?.stringValue || 'Announcement', body: d.fields?.body?.stringValue || '', at: d.fields?.createdAt?.stringValue || '',
+  })).filter((a) => !seen.has(a.id)).sort((a, b) => b.at.localeCompare(a.at)).slice(0, 3);
+  for (const a of docs) {
+    await self.registration.showNotification('📢 ' + a.title, { body: a.body.slice(0, 180), icon: 'icon-192.png', badge: 'icon-192.png', tag: 'rsjjyc-ann-' + a.id, data: { url: 'member.html' } });
+    seen.add(a.id);
+  }
+  await rjson('ann-seen', [...seen]);
+}
+self.addEventListener('periodicsync', (e) => { if (e.tag === 'rsjjyc-due-check') e.waitUntil(announcementCheck().catch(() => {})); });

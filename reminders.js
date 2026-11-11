@@ -1,13 +1,13 @@
 // ============================================================================
-//  Payment reminders: 7, 5 and 3 days before each monthly due date, and while
+//  Payment reminders: 7, 3 and 1 day before each monthly due date, and while
 //  overdue — until the payment (receipt) is uploaded.
 //   • phone notifications (shown by the app; background checks in the installed app)
-//   • calendar file with alarms 7/5/3 days before each due date
+//   • calendar file with alarms 7/3/1 days before each due date
 // The due date is the member's joining day in each month.
 // ============================================================================
 import { DAY, isoDate, monthLabel, npr, fmtDate } from './utils.js';
 
-export const REMIND_DAYS = [7, 5, 3];
+export const REMIND_DAYS = [7, 3, 1];
 const CACHE = 'rsjjyc-reminders';
 
 /** Next unpaid month and its due date (null when nothing is left to pay) */
@@ -25,7 +25,7 @@ export function dueDateOf(member, monthKey) {
   return new Date(y, m - 1, Math.min(day, new Date(y, m, 0).getDate()));
 }
 
-/** Which reminder applies today: 7, 5, 3, 'overdue' or null */
+/** Which reminder applies today: 7, 3, 1, 'overdue' or null */
 export function milestone(daysLeft) {
   if (daysLeft < 0) return 'overdue';
   for (const d of [...REMIND_DAYS].sort((a, b) => a - b)) if (daysLeft <= d) return d;
@@ -92,7 +92,7 @@ export async function syncReminders(info) {
 }
 
 // ---------------------------------------------------------------------------
-//  Calendar file (.ics) with alarms 7, 5 and 3 days before each due date
+//  Calendar file (.ics) with alarms 7, 3 and 1 day before each due date
 // ---------------------------------------------------------------------------
 export function downloadCalendar(member, ledger) {
   const today = isoDate(new Date());

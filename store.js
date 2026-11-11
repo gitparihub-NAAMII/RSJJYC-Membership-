@@ -165,6 +165,15 @@ async function firebaseBackend() {
       const { add } = changeKeys(m, changes);
       for (const k of add) { const s = await F.getDoc(d('uniques', k)); if (s.exists() && s.data().uid !== m.uid) fail(k.startsWith('phone_') ? 'dup-phone' : 'dup-email'); }
     },
+    // ---- notifications (admin -> one member) & announcements (admin -> everyone) ----
+    async notify(uid, n) { const r = await F.addDoc(F.collection(db, 'notifications'), { ...n, uid, read: false, createdAt: new Date().toISOString() }); return r.id; },
+    listNotifications: (uid) => all(F.query(F.collection(db, 'notifications'), F.where('uid', '==', uid))),
+    async markNotificationsRead(ids) {
+      for (let i = 0; i < ids.length; i += 400) { const b = F.writeBatch(db); ids.slice(i, i + 400).forEach((id) => b.update(d('notifications', id), { read: true })); await b.commit(); }
+    },
+    async createAnnouncement(a) { const r = await F.addDoc(F.collection(db, 'announcements'), { ...a, createdAt: new Date().toISOString() }); return r.id; },
+    listAnnouncements: () => all(F.collection(db, 'announcements')),
+    deleteAnnouncement: (id) => F.deleteDoc(d('announcements', id)),
   };
 }
 
@@ -175,7 +184,7 @@ function demoBackend() {
   const KEY = 'rsjjyc_demo_db_v2';
   const SKEY = 'rsjjyc_demo_session';
   const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } };
-  const db = Object.assign({ users: {}, members: {}, publicCards: {}, payments: {}, receipts: {}, waivers: {}, counters: {}, uniques: {}, changeRequests: {} }, load());
+  const db = Object.assign({ users: {}, members: {}, publicCards: {}, payments: {}, receipts: {}, waivers: {}, counters: {}, uniques: {}, changeRequests: {}, notifications: {}, announcements: {} }, load());
   const save = () => localStorage.setItem(KEY, JSON.stringify(db));
   const getSession = () => { try { return JSON.parse(localStorage.getItem(SKEY)); } catch { return null; } };
   const setSession = (s) => { s ? localStorage.setItem(SKEY, JSON.stringify(s)) : localStorage.removeItem(SKEY); return s; };
@@ -272,6 +281,13 @@ function demoBackend() {
       const { add } = changeKeys(m, changes);
       add.forEach((k) => { if (db.uniques[k] && db.uniques[k].uid !== m.uid) fail(k.startsWith('phone_') ? 'dup-phone' : 'dup-email'); });
     },
+    // ---- notifications & announcements ----
+    async notify(uid, n) { const id = rid(16); db.notifications[id] = { ...n, id, uid, read: false, createdAt: new Date().toISOString() }; save(); return id; },
+    async listNotifications(uid) { return clone(Object.values(db.notifications).filter((n) => n.uid === uid)); },
+    async markNotificationsRead(ids) { ids.forEach((id) => { if (db.notifications[id]) db.notifications[id].read = true; }); save(); },
+    async createAnnouncement(a) { const id = rid(16); db.announcements[id] = { ...a, id, createdAt: new Date().toISOString() }; save(); return id; },
+    async listAnnouncements() { return clone(Object.values(db.announcements)); },
+    async deleteAnnouncement(id) { delete db.announcements[id]; save(); },
   };
 }
 

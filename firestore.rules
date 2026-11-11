@@ -74,6 +74,25 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Personal notifications: written by the admin for ONE member; only that member can read them
+    // (and mark them as read).
+    match /notifications/{id} {
+      allow read: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if isAdmin() && request.resource.data.read == false;
+      allow update: if signedIn() && resource.data.uid == request.auth.uid
+        && onlyKeys(['read']) && request.resource.data.read == true;
+      allow delete: if false;
+    }
+
+    // Announcements: written by the admin for ALL members. Public to read so the installed
+    // app can show new ones as phone notifications in the background.
+    match /announcements/{id} {
+      allow read: if true;
+      allow create: if isAdmin();
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+
     // Member detail change requests: the member asks, the admin approves or rejects.
     match /changeRequests/{id} {
       allow read: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());

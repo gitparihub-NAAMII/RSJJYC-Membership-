@@ -31,6 +31,34 @@ const NE = {
   'Estd. 1979 · Serving the community': 'स्थापना १९७९ · समुदायको सेवामा',
   'Back': 'पछाडि',
   'Close': 'बन्द गर्नुहोस्',
+  // notifications, announcements, badge
+  'Notifications': 'सूचनाहरू', 'No notifications yet.': 'अहिलेसम्म कुनै सूचना छैन।',
+  'just now': 'भर्खरै', '{n} min ago': '{n} मिनेट अघि', '{n} h ago': '{n} घण्टा अघि', '{n} day(s) ago': '{n} दिन अघि',
+  'Phone notifications are ON': 'फोन नोटिफिकेसन खुला छ', 'Phone notifications are not supported on this browser': 'यो ब्राउजरमा फोन नोटिफिकेसन उपलब्ध छैन',
+  'Phone notifications are blocked in your phone settings': 'फोन सेटिङमा नोटिफिकेसन रोकिएको छ',
+  'Payment approved': 'भुक्तानी स्वीकृत', 'Payment receipt rejected — card INACTIVE': 'भुक्तानी रसिद अस्वीकृत — कार्ड निष्क्रिय',
+  'Waiver request approved': 'छुट अनुरोध स्वीकृत', 'Waiver request rejected': 'छुट अनुरोध अस्वीकृत',
+  'Your member type was updated': 'तपाईंको सदस्य प्रकार अद्यावधिक भयो',
+  'Your detail change request was approved': 'तपाईंको विवरण परिवर्तन अनुरोध स्वीकृत भयो', 'Your detail change request was rejected': 'तपाईंको विवरण परिवर्तन अनुरोध अस्वीकृत भयो',
+  'Your {a} payment for {m} was checked and approved. Thank you!': '{m} को {a} भुक्तानी जाँच गरी स्वीकृत भयो। धन्यवाद!',
+  'Your details and membership card have been updated.': 'तपाईंको विवरण र सदस्यता कार्ड अद्यावधिक भयो।',
+  'You are now listed as {t}. Your membership card shows the new type.': 'तपाईं अब {t} हुनुहुन्छ। सदस्यता कार्डमा नयाँ प्रकार देखिन्छ।',
+  'Payment overdue': 'भुक्तानी ढिला भयो', 'Payment due today': 'आज भुक्तानी गर्नुपर्ने', 'Payment due in {n} day(s)': '{n} दिनमा भुक्तानी गर्नुपर्ने',
+  'New payment receipt to check': 'जाँच गर्नुपर्ने नयाँ रसिद', 'New waiver request': 'नयाँ छुट अनुरोध', 'Detail change request': 'विवरण परिवर्तन अनुरोध',
+  'New member registered': 'नयाँ सदस्य दर्ता भए', '{a} wants to change: {b}': '{a} ले परिवर्तन गर्न चाहनुहुन्छ: {b}',
+  'Announcements': 'सूचना पाटी', 'Announcement board': 'सूचना पाटी',
+  'Write a message for ALL members. It appears in every member\'s 🔔 notifications and as a phone notification for members who turned notifications on.': 'सबै सदस्यका लागि सन्देश लेख्नुहोस्। यो हरेक सदस्यको 🔔 सूचनामा र नोटिफिकेसन खोलेकाहरूको फोनमा देखिन्छ।',
+  'Title': 'शीर्षक', 'Message': 'सन्देश', 'e.g. General meeting on Saturday': 'जस्तै: शनिबार साधारण सभा', 'Write the full announcement here…': 'पूरा सूचना यहाँ लेख्नुहोस्…',
+  'Publish to all members': 'सबै सदस्यलाई प्रकाशित गर्नुहोस्', 'Published announcements ({n})': 'प्रकाशित सूचनाहरू ({n})', 'No announcements yet.': 'अहिलेसम्म कुनै सूचना छैन।',
+  'Remove': 'हटाउनुहोस्', 'Please write a title and a message.': 'कृपया शीर्षक र सन्देश लेख्नुहोस्।',
+  'Announcement published to all members.': 'सूचना सबै सदस्यलाई प्रकाशित भयो।', 'Announcement removed.': 'सूचना हटाइयो।',
+  'Milestone badge': 'माइलस्टोन ब्याज', 'My milestone badge': 'मेरो माइलस्टोन ब्याज',
+  'Contribute for a full year (12 months) to earn your 1-year milestone badge.': '१ वर्षको माइलस्टोन ब्याज पाउन पूरा एक वर्ष (१२ महिना) योगदान गर्नुहोस्।',
+  '{n} of 12 months paid': '१२ मध्ये {n} महिना तिरिएको',
+  'Milestone badge: {n} year of contribution': 'माइलस्टोन ब्याज: {n} वर्षको योगदान', 'Milestone badge: {n} years of contribution': 'माइलस्टोन ब्याज: {n} वर्षको योगदान',
+  'Thank you for your support! Your badge is ready to download in your dashboard.': 'तपाईंको सहयोगका लागि धन्यवाद! तपाईंको ब्याज ड्यासबोर्डमा डाउनलोड गर्न तयार छ।',
+  'Congratulations, {n}!': 'बधाई छ, {n}!', 'You have completed': 'तपाईंले पूरा गर्नुभयो', 'of contribution': 'योगदान',
+  'to the club. Here is your milestone badge.': 'क्लबमा। यो रहेको तपाईंको माइलस्टोन ब्याज।',
   // detail change requests
   'Request a change in my details': 'मेरो विवरण परिवर्तनको अनुरोध',
   'Changes are applied to your details and membership card after the admin approves them.': 'एडमिनले स्वीकृत गरेपछि तपाईंको विवरण र सदस्यता कार्डमा परिवर्तन लागू हुन्छ।',
@@ -74,7 +102,7 @@ const NE = {
   'Payment reminders': 'भुक्तानी रिमाइन्डर',
   'Next payment:': 'अर्को भुक्तानी:', 'due on': 'तिर्ने मिति', 'for {m}, due on': '{m} को, तिर्ने मिति',
   'Nothing left to pay this term.': 'यस अवधिमा तिर्न बाँकी छैन।',
-  'We remind you': 'हामी तपाईंलाई सम्झाउँछौं:', '7, 5 and 3 days': '७, ५ र ३ दिन',
+  'We remind you': 'हामी तपाईंलाई सम्झाउँछौं:', '7, 3 and 1 day': '७, ३ र १ दिन',
   'before each due date, and every day while a payment is overdue, until it is paid.': 'हरेक भुक्तानी मितिभन्दा अघि, र बाँकी रहँदासम्म हरेक दिन — तिर्ने बेलासम्म।',
   'Turn on phone notifications': 'फोन नोटिफिकेसन खोल्नुहोस्', 'How to allow': 'कसरी अनुमति दिने',
   'Notifications ON': 'नोटिफिकेसन खुला', 'Notifications OFF': 'नोटिफिकेसन बन्द', 'Notifications blocked': 'नोटिफिकेसन रोकिएको', 'Not supported here': 'यहाँ उपलब्ध छैन',
@@ -84,8 +112,8 @@ const NE = {
   'Calendar file saved with {n} due date(s). Open it to add the reminders to your calendar.': '{n} भुक्तानी मितिसहित क्यालेन्डर फाइल सेभ भयो। रिमाइन्डर थप्न यो फाइल खोल्नुहोस्।',
   'Notifications are blocked. Open your phone Settings → Apps → Chrome (or RSJJYC) → Notifications, allow them, then reopen the app.': 'नोटिफिकेसन रोकिएको छ। फोनको Settings → Apps → Chrome (वा RSJJYC) → Notifications मा अनुमति दिई एप फेरि खोल्नुहोस्।',
   'Payment reminders ({n})': 'भुक्तानी रिमाइन्डर ({n})', 'Reminders': 'रिमाइन्डर',
-  'Members whose next monthly contribution is due within 7 days or is overdue. Members with notifications turned on are reminded automatically 7, 5 and 3 days before; use these buttons to also send a WhatsApp or SMS.':
-    '७ दिनभित्र तिर्नुपर्ने वा म्याद नाघेका सदस्यहरू। नोटिफिकेसन खोलेका सदस्यलाई ७, ५ र ३ दिनअघि स्वतः सम्झाइन्छ; यी बटनबाट WhatsApp वा SMS पनि पठाउन सकिन्छ।',
+  'Members whose next monthly contribution is due within 7 days or is overdue. Members with notifications turned on are reminded automatically 7, 3 and 1 day before; use these buttons to also send a WhatsApp or SMS.':
+    '७ दिनभित्र तिर्नुपर्ने वा म्याद नाघेका सदस्यहरू। नोटिफिकेसन खोलेका सदस्यलाई ७, ३ र १ दिनअघि स्वतः सम्झाइन्छ; यी बटनबाट WhatsApp वा SMS पनि पठाउन सकिन्छ।',
   'Overdue {n} day(s)': '{n} दिन ढिला', 'Due today': 'आज तिर्नुपर्ने', 'Due in {n} day(s)': '{n} दिनमा तिर्नुपर्ने',
   'Copy message': 'सन्देश कपी', 'Message copied.': 'सन्देश कपी भयो।', 'Nobody is due in the next 7 days.': 'आगामी ७ दिनमा कसैको भुक्तानी बाँकी छैन।',
   'Get the RSJJYC App': 'RSJJYC एप डाउनलोड गर्नुहोस्',
@@ -560,7 +588,7 @@ export let LANG = (() => { try { return localStorage.getItem('lang') === 'ne' ? 
 const textRec = new Map();   // TextNode -> { orig, cur }
 const attrRec = new Map();   // Element -> { attr: { orig, cur } }
 const ATTRS = ['placeholder', 'title', 'aria-label'];
-const SKIP = 'script,style,.mcard,[data-no-i18n],.mono,textarea';
+const SKIP = 'script,style,.mcard,.badge-cert,[data-no-i18n],.mono,textarea';
 
 function doText(n) {
   if (!n.parentElement || n.parentElement.closest(SKIP)) return;

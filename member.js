@@ -4,7 +4,9 @@ import { initPage, cardData } from './common.js';
 import { mountCard, downloadButtons, wireDownloads, verifyUrl } from './card.js';
 import { renderProfileForm } from './profile.js';
 import { changeSectionHtml, openChangeForm } from './changereq.js';
-import { nextDue, reminderText, syncReminders, enableNotifications, notifyState, downloadCalendar } from './reminders.js';
+import { nextDue, reminderText, syncReminders, enableNotifications, notifyState, downloadCalendar, milestone } from './reminders.js';
+import { mountBell, phoneNotify } from './notify.js';
+import { badgeYears, badgeCertificate, mountScaled, badgeDownloadButtons, wireBadgeDownloads, celebrate } from './badge.js';
 import { buildLedger, cardStatus, esc, npr, fmtDate, modal, toast, monthKey, addMonths, addYears, STATUS_TEXT, readReceipt, showReceipt, checkUpload } from './utils.js';
 
 const store = await initPage();
@@ -13,7 +15,7 @@ const sess = await store.session();
 if (!sess || sess.role !== 'member') { location.replace(sess?.role === 'admin' ? 'admin.html' : 'index.html#login'); throw new Error('redirect'); }
 document.getElementById('logout').onclick = async () => { await store.logout(); location.href = 'index.html'; };
 
-let M, payments, waivers, changeReqs = [], L, ST;
+let M, payments, waivers, changeReqs = [], notes = [], anns = [], L, ST;
 
 async function load() {
   M = await store.getMember(sess.uid);
@@ -22,7 +24,7 @@ async function load() {
     renderProfileForm(app, store, sess, (m) => { welcome(m); load(); });
     return;
   }
-  [payments, waivers, changeReqs] = await Promise.all([store.listPayments(sess.uid), store.listWaivers(sess.uid), store.listChangeRequests(sess.uid).catch(() => [])]);
+  [payments, waivers, changeReqs, notes, anns] = await Promise.all([store.listPayments(sess.uid), store.listWaivers(sess.uid), store.listChangeRequests(sess.uid).catch(() => []), store.listNotifications(sess.uid).catch(() => []), store.listAnnouncements().catch(() => [])]);
   L = buildLedger(M, payments, waivers);
   ST = cardStatus({ ...M, paidThrough: L.paidThrough });
   render();
@@ -74,6 +76,7 @@ function render() {
           ${downloadButtons()}
           <p class="hint" style="margin-top:10px">QR link: <a href="${esc(verifyUrl(M.cardToken))}" target="_blank" rel="noopener">verify my card ↗</a></p>
         </div>
+        ${badgePanelHtml()}
         <div class="panel">
           <h3>🔄 Renew membership</h3>
           <p class="hint" style="margin-top:-6px">${esc(renew.msg)}</p>
@@ -82,7 +85,7 @@ function render() {
         <div class="panel" id="remindPanel">
           <h3>🔔 Payment reminders</h3>
           <p class="hint" style="margin-top:-6px">${due ? `Next payment: <b>${npr(due.amount)}</b> for ${esc(due.label)}, due on <b>${fmtDate(due.due)}</b>.` : 'Nothing left to pay this term. ✔'}</p>
-          <p class="hint">We remind you <b>7, 5 and 3 days</b> before each due date, and every day while a payment is overdue, until it is paid.</p>
+          <p class="hint">We remind you <b>7, 3 and 1 day</b> before each due date, and every day while a payment is overdue, until it is paid.</p>
           <div class="remind-row"><span id="notifState"></span><button class="btn btn-sm" id="notifBtn">Turn on phone notifications</button></div>
           <button class="btn btn-sm btn-ghost btn-block" id="calBtn" style="margin-top:10px" ${due ? '' : 'disabled'}>📅 Add reminders to my phone calendar</button>
           <p class="hint" style="margin-top:8px">Calendar alarms work even when the app is closed. Notifications also appear when you open the app.</p>
@@ -164,10 +167,72 @@ function render() {
     toast(n ? `Calendar file saved with ${n} due date(s). Open it to add the reminders to your calendar.` : 'Nothing left to pay this term.', n ? 'success' : 'info');
   };
   syncReminders(due);
+  afterRender(due);
   app.querySelectorAll('[data-receipt]').forEach((b) => (b.onclick = async () => showReceipt(await store.getReceipt(b.dataset.receipt))));
 }
 
 const addr = (a = {}) => esc([a.tole, a.municipality && `${a.municipality}-${a.ward}`, a.district, a.province].filter(Boolean).join(', '));
+
+// ---------- 🏅 milestone badge ----------
+function badgePanelHtml() {
+  const years = badgeYears(L);
+  if (years >= 1) return `<div class="panel" id="badgePanel"><h3>🏅 My milestone badge</h3><div id="badgeBox"></div>${badgeDownloadButtons()}</div>`;
+  const paid = L.rows.filter((r) => r.status === 'paid').length, pct = Math.round((paid / 12) * 100);
+  return `<div class="panel" id="badgePanel"><h3>🏅 Milestone badge</h3>
+    <p class="hint" style="margin-top:-6px">Contribute for a full year (12 months) to earn your 1-year milestone badge.</p>
+    <div class="badge-progress"><i style="width:${pct}%"></i></div><p class="hint">${paid} of 12 months paid</p></div>`;
+}
+
+// ---------- 🔔 notifications ----------
+let bell;
+const seenGet = (k) => new Set(JSON.parse(localStorage.getItem(`rsjjyc_${k}_${M.uid}`) || '[]'));
+const seenAdd = (k, ids) => { const s = seenGet(k); ids.forEach((i) => s.add(i)); localStorage.setItem(`rsjjyc_${k}_${M.uid}`, JSON.stringify([...s].slice(-300))); };
+function memberItems(due) {
+  const annSeen = seenGet('annseen'), otherSeen = seenGet('seen');
+  const list = [
+    ...notes.map((n) => ({ id: 'n-' + n.id, nid: n.id, kind: 'note', icon: n.icon || '🔔', title: n.title, body: n.body, at: n.createdAt, unread: !n.read })),
+    ...anns.map((a) => ({ id: 'a-' + a.id, kind: 'ann', icon: '📢', title: a.title, body: a.body, at: a.createdAt, unread: !annSeen.has(a.id), aid: a.id })),
+  ];
+  const ms = due && milestone(due.daysLeft);
+  if (ms) {
+    const id = ms === 'overdue' ? `r-${due.month}-overdue-${new Date().toISOString().slice(0, 10)}` : `r-${due.month}-${ms}`;
+    list.push({ id, kind: 'rem', icon: due.overdue ? '⏰' : '🔔', tone: 'warn', title: due.overdue ? 'Payment overdue' : due.daysLeft === 0 ? 'Payment due today' : `Payment due in ${due.daysLeft} day(s)`, body: reminderText(due), at: new Date().toISOString(), unread: !otherSeen.has(id) });
+  }
+  const years = badgeYears(L);
+  if (years >= 1) list.push({ id: `b-${years}`, kind: 'badge', icon: '🏅', title: `Milestone badge: ${years} ${years === 1 ? 'year' : 'years'} of contribution`, body: 'Thank you for your support! Your badge is ready to download in your dashboard.', at: new Date().toISOString(), unread: !otherSeen.has(`b-${years}`) });
+  return list.map((i) => ({ ...i, url: 'member.html' }));
+}
+function afterRender(due) {
+  // badge certificate + first-time celebration
+  const years = badgeYears(L);
+  if (years >= 1) {
+    mountScaled(app.querySelector('#badgeBox'), badgeCertificate(M, years, L.paidTotal));
+    wireBadgeDownloads(app.querySelector('#badgePanel'), M, years, L.paidTotal);
+    const key = `rsjjyc_badge_${M.uid}`;
+    if (Number(localStorage.getItem(key) || 0) < years) { localStorage.setItem(key, years); setTimeout(() => celebrate(M, years, L.paidTotal), 600); }
+  }
+  // bell
+  if (!bell) bell = mountBell({ onOpen: (items) => {
+    const unreadNotes = items.filter((i) => i.kind === 'note' && i.unread).map((i) => i.nid);
+    if (unreadNotes.length) store.markNotificationsRead(unreadNotes).then(() => notes.forEach((n) => { if (unreadNotes.includes(n.id)) n.read = true; })).catch(() => {});
+    seenAdd('annseen', items.filter((i) => i.kind === 'ann').map((i) => i.aid));
+    seenAdd('seen', items.filter((i) => i.kind === 'rem' || i.kind === 'badge').map((i) => i.id));
+  } });
+  const items = memberItems(due);
+  bell?.set(items);
+  // personal notes + announcements also go to the phone's notification bar (reminders are sent separately)
+  phoneNotify(M.uid, items.filter((i) => i.kind === 'note' || i.kind === 'ann'));
+  saveForBackground();
+}
+/** lets the installed app check for new announcements in the background */
+async function saveForBackground() {
+  try {
+    const { firebaseConfig } = await import('./firebase-config.js');
+    const c = await caches.open('rsjjyc-reminders');
+    await c.put('fb', new Response(JSON.stringify({ projectId: firebaseConfig.projectId, apiKey: firebaseConfig.apiKey })));
+    await c.put('ann-seen', new Response(JSON.stringify(anns.map((a) => a.id))));
+  } catch { /* optional */ }
+}
 
 
 // ---------- history ----------

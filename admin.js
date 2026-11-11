@@ -8,6 +8,7 @@ import { buildLedger, cardStatus, esc, npr, fmtDate, isoDate, modal, toast, mont
 setModalDefaults({ backdropClose: false });
 import { nextDue, milestone, adminMessage } from './reminders.js';
 import { changesTable } from './changereq.js';
+import { mountBell, phoneNotify } from './notify.js';
 const needsReview = (p) => p.status === 'pending' || (p.status === 'approved' && p.reviewed === false);
 
 const store = await initPage();
@@ -30,6 +31,7 @@ async function load() {
   const pend = payments.filter(needsReview).length + waivers.filter((w) => w.status === 'pending').length + changeReqs.filter((c) => c.status === 'pending').length;
   const b = document.getElementById('apBadge'); b.hidden = !pend; b.textContent = pend;
   const nRem = toRemind().length; const rb = document.getElementById('rmBadge'); rb.hidden = !nRem; rb.textContent = nRem;
+  refreshAdminBell();
   show(current);
 }
 function enrich(m) {
@@ -49,7 +51,7 @@ document.getElementById('nav').addEventListener('click', (e) => {
 function show(v) {
   current = v;
   charts.splice(0).forEach((c) => c.destroy());
-  ({ overview, members: membersView, approvals, payments: paymentsView, reminders: remindersView })[v]();
+  ({ overview, members: membersView, approvals, payments: paymentsView, reminders: remindersView, announce: announceView })[v]();
 }
 
 // ---------- year / month helpers ----------
@@ -270,7 +272,7 @@ function memberModal(m) {
   wireDownloads(el, () => data);
   el.querySelector('#mTypeSave').onclick = async () => {
     const t = el.querySelector('#mType').value;
-    try { await store.updateMember(m.uid, { memberType: t }); await store.updatePublicCard(m.cardToken, { memberType: t }); toast('Member type updated', 'success'); close(); load(); }
+    try { await store.updateMember(m.uid, { memberType: t }); await store.updatePublicCard(m.cardToken, { memberType: t }); tellMember(m.uid, { icon: '🎖️', type: 'memberType', title: 'Your member type was updated', body: `You are now listed as ${t}. Your membership card shows the new type.` }); toast('Member type updated', 'success'); close(); load(); }
     catch (e) { toast(friendlyError(e), 'error'); }
   };
 }
@@ -385,6 +387,7 @@ function approvals() {
       Object.assign(rec, patch);
       // payment receipt rejected -> card INACTIVE; receipt approved -> card ACTIVE again
       await syncPublic(rec.uid, kind === 'payment' ? { inactive: act === 'rejected' } : {});
+      tellMember(rec.uid, decisionNote(kind, act, rec, reason));
       toast(`${kind === 'waiver' ? 'Waiver' : 'Payment'} ${act}.`, act === 'approved' ? 'success' : 'info');
       load();
     } catch (e) { toast(friendlyError(e), 'error'); }
@@ -418,9 +421,11 @@ function wireChangeRequests(root) {
       if (approve) {
         if (!m) throw new Error('Member not found');
         await store.approveChangeRequest(req, m, review);
+        tellMember(req.uid, { icon: '✅', type: 'change', title: 'Your detail change request was approved', body: 'Your details and membership card have been updated.' + (reason ? ' Admin note: ' + reason : '') });
         toast('Changes approved — member details and card updated.', 'success');
       } else {
         await store.rejectChangeRequest(req.id, review);
+        tellMember(req.uid, { icon: '✖️', type: 'change', title: 'Your detail change request was rejected', body: 'Reason: ' + reason });
         toast('Change request rejected.', 'info');
       }
       load();
@@ -496,7 +501,7 @@ function remindersView() {
   view.innerHTML = `
     <div class="panel">
       <h3>🔔 Payment reminders (${list.length})</h3>
-      <p class="hint" style="margin-top:-6px">Members whose next monthly contribution is due within 7 days or is overdue. Members with notifications turned on are reminded automatically 7, 5 and 3 days before; use these buttons to also send a WhatsApp or SMS.</p>
+      <p class="hint" style="margin-top:-6px">Members whose next monthly contribution is due within 7 days or is overdue. Members with notifications turned on are reminded automatically 7, 3 and 1 day before; use these buttons to also send a WhatsApp or SMS.</p>
       ${list.length ? `<div class="remind-list">${list.map(({ m, d }) => {
         const msg = adminMessage(m, d);
         return `<div class="req-card ${d.overdue || d.daysLeft <= 3 ? 'urgent' : ''}">
@@ -520,4 +525,73 @@ function wireReceipts(root) {
 }
 
 ['langchange', 'themechange'].forEach((ev) => window.addEventListener(ev, () => { if (members.length || current) show(current); }));
+// ============================ NOTIFICATIONS ============================
+/** personal notification to ONE member (never to others) */
+function tellMember(uid, n) { store.notify(uid, n).catch(() => {}); }
+function decisionNote(kind, act, rec, reason) {
+  const months = (rec.months || []).map(monthLabel).join(', ');
+  if (kind === 'payment') return act === 'approved'
+    ? { icon: '✅', type: 'payment', title: 'Payment approved', body: `Your ${npr(rec.amount)} payment for ${months} was checked and approved. Thank you!${reason ? ' Admin note: ' + reason : ''}` }
+    : { icon: '⛔', type: 'payment', title: 'Payment receipt rejected — card INACTIVE', body: `Your ${npr(rec.amount)} payment for ${months} was rejected. Reason: ${reason}. Please pay again and upload a valid receipt to make your card active.` };
+  return act === 'approved'
+    ? { icon: '🙏', type: 'waiver', title: 'Waiver request approved', body: `Your waiver for ${months} was approved. Reason: ${reason}` }
+    : { icon: '✖️', type: 'waiver', title: 'Waiver request rejected', body: `Your waiver for ${months} was rejected. Reason: ${reason}` };
+}
+
+// admin bell: things waiting for the admin
+let adminBell;
+const seenKey = 'rsjjyc_admin_seen';
+function adminItems() {
+  const seen = new Set(JSON.parse(localStorage.getItem(seenKey) || '[]'));
+  const list = [];
+  payments.filter(needsReview).forEach((p) => list.push({ id: 'p-' + p.id, icon: '🧾', title: 'New payment receipt to check', body: `${p.name} · ${npr(p.amount)} · ${(p.months || []).map(monthLabel).join(', ')}`, at: p.createdAt }));
+  waivers.filter((w) => w.status === 'pending').forEach((w) => list.push({ id: 'w-' + w.id, icon: '🙏', title: 'New waiver request', body: `${w.name} · ${(w.months || []).map(monthLabel).join(', ')} — ${w.reason}`, at: w.createdAt }));
+  changeReqs.filter((c) => c.status === 'pending').forEach((c) => list.push({ id: 'c-' + c.id, icon: '📝', title: 'Detail change request', body: `${c.name} wants to change: ${Object.keys(c.changes).join(', ')}`, at: c.createdAt }));
+  members.filter((m) => Date.now() - m.joinMs < 7 * DAY).forEach((m) => list.push({ id: 'r-' + m.uid, icon: '🆕', title: 'New member registered', body: `${m.fullName} · ${m.memberNo}`, at: new Date(m.joinMs).toISOString() }));
+  return list.map((n) => ({ ...n, unread: !seen.has(n.id), url: 'admin.html' }));
+}
+function refreshAdminBell() {
+  if (!adminBell) adminBell = mountBell({ onOpen: (items) => {
+    const seen = new Set(JSON.parse(localStorage.getItem(seenKey) || '[]')); items.forEach((i) => seen.add(i.id));
+    localStorage.setItem(seenKey, JSON.stringify([...seen].slice(-500)));
+  } });
+  const items = adminItems();
+  adminBell?.set(items);
+  phoneNotify('admin', items);
+}
+
+// ============================ ANNOUNCEMENTS ============================
+let announcements = [];
+async function announceView() {
+  announcements = await store.listAnnouncements().catch(() => []);
+  const list = [...announcements].sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+  view.innerHTML = `
+    <div class="panel">
+      <h3>📢 Announcement board</h3>
+      <p class="hint" style="margin-top:-6px">Write a message for ALL members. It appears in every member's 🔔 notifications and as a phone notification for members who turned notifications on.</p>
+      <label class="f">Title <span class="req">*</span><input id="anTitle" maxlength="120" placeholder="e.g. General meeting on Saturday"></label>
+      <label class="f" style="margin-top:10px">Message <span class="req">*</span><textarea id="anBody" rows="5" maxlength="2000" placeholder="Write the full announcement here…"></textarea></label>
+      <div class="err" id="anErr"></div>
+      <button class="btn btn-primary btn-block" id="anSend">📢 Publish to all members</button>
+    </div>
+    <div class="panel"><h3>Published announcements (${list.length})</h3>
+      ${list.length ? list.map((a) => `<div class="req-card announce-card">
+        <div class="top"><b>📢 ${esc(a.title)}</b><small class="hint">${fmtDate(a.createdAt)}</small></div>
+        <p style="white-space:pre-wrap">${esc(a.body)}</p>
+        <div class="actions"><button class="btn btn-sm btn-ghost" data-andel="${esc(a.id)}">Remove</button></div>
+      </div>`).join('') : '<div class="empty">No announcements yet.</div>'}
+    </div>`;
+  view.querySelector('#anSend').onclick = async () => {
+    const title = view.querySelector('#anTitle').value.trim(), body = view.querySelector('#anBody').value.trim();
+    const err = view.querySelector('#anErr'); err.textContent = '';
+    if (title.length < 3 || body.length < 5) { err.textContent = 'Please write a title and a message.'; return; }
+    const b = view.querySelector('#anSend'); b.disabled = true;
+    try { await store.createAnnouncement({ title, body, by: sess.uid }); toast('Announcement published to all members.', 'success'); announceView(); }
+    catch (e) { err.textContent = friendlyError(e); b.disabled = false; }
+  };
+  view.querySelectorAll('[data-andel]').forEach((b) => (b.onclick = async () => {
+    try { await store.deleteAnnouncement(b.dataset.andel); toast('Announcement removed.', 'info'); announceView(); } catch (e) { toast(friendlyError(e), 'error'); }
+  }));
+}
+
 load().catch((e) => { view.innerHTML = `<div class="panel empty">Could not load data: ${esc(friendlyError(e))}</div>`; });
