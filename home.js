@@ -26,7 +26,11 @@ const showTab = (name) => {
   ['register', 'login', 'admin'].forEach((t) => ($('#tab-' + t).hidden = t !== name));
   history.replaceState(null, '', '#' + name);
 };
-document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
+document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('click', () => {
+  showTab(b.dataset.tab);
+  // on phones the form is below the fold: bring it into view
+  if (innerWidth < 1000) document.getElementById('tab-' + b.dataset.tab).scrollIntoView({ behavior: 'smooth', block: 'start' });
+}));
 if (['register', 'login', 'admin'].includes(location.hash.slice(1))) showTab(location.hash.slice(1));
 document.querySelectorAll('[data-go]').forEach((a) => a.addEventListener('click', (e) => {
   e.preventDefault(); showTab(a.dataset.go);

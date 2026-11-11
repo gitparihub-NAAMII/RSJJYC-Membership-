@@ -304,7 +304,6 @@ footer.site { text-align: center; color: var(--muted); font-size: 12.5px; paddin
 /* ---------- responsive ---------- */
 @media (max-width: 1000px) {
   .dash, .charts, .hero .in { grid-template-columns: 1fr; }
-  .hero-card { display: none; }
   .charts .panel + .panel { margin-top: 0; }
 }
 @media (max-width: 680px) {
@@ -427,3 +426,81 @@ input.good { border-color: var(--green); }
 .stat.alert b { color: var(--red); }
 .stat.alert span::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--red); margin-right: 6px; animation: pulse 1.2s infinite; vertical-align: 1px; }
 @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,.6); } 50% { box-shadow: 0 0 0 6px rgba(220,38,38,0); } }
+
+/* =====================================================================
+   v6: phones & tablets
+   ===================================================================== */
+/* the card is drawn at 1012px and scaled down: keep that from widening the page */
+.card-frame { overflow: hidden; border-radius: 3.5%/5.6%; }
+.panel { scroll-margin-top: 90px; }
+html { overflow-x: clip; }
+img, canvas { max-width: 100%; }
+
+@media (max-width: 1000px) {
+  /* sample card visible on tablets & phones, under the text */
+  .hero-card { display: block !important; transform: none; width: 100%; max-width: 460px; margin: 6px auto 0; filter: drop-shadow(0 16px 24px rgba(0,0,0,.3)); }
+  .modal .dash { grid-template-columns: 1fr !important; }
+  .admin-top { flex-direction: column; align-items: stretch; }
+  .admin-top .btn { width: 100%; }
+}
+
+@media (max-width: 680px) {
+  /* readable text */
+  body { font-size: 16px; }
+  html[lang="ne"] body { font-size: 17px; }
+  .hint, small.hint { font-size: 13.5px; }
+  label.f { font-size: 14.5px; }
+  input, select, textarea { font-size: 16px; padding: 12px 13px; }
+  .btn { font-size: 15px; padding: 12px 18px; }
+  .btn-sm { font-size: 14px; padding: 9px 13px; }
+  .panel h2 { font-size: 22px; } .panel h3 { font-size: 17px; }
+  .panel .sub { font-size: 15px; }
+  .err, .pw-label, .pw-match { font-size: 14px; }
+  .stat span { font-size: 13.5px; } .stat small { font-size: 13px; } .stat b { font-size: 22px; }
+  table.t { font-size: 14px; } table.t th { font-size: 12.5px; }
+  .pill { font-size: 12.5px; }
+  .mo { font-size: 14px; } .mo span { font-size: 12.5px; }
+  .legend { font-size: 13px; }
+  .kv { font-size: 15px; }
+  .steps li { font-size: 13.5px; }
+  .chips button { font-size: 14px; padding: 8px 14px; }
+  .toast { font-size: 15px; }
+  #toasts { left: 12px; right: 12px; } .toast { max-width: none; }
+
+  /* hero */
+  .hero .lead { font-size: 17px; }
+  .hook { font-size: 18px; min-height: 0; }
+  .hero .small { font-size: 15px; }
+  .hero-stats { gap: 16px 22px; } .hero-stats div { font-size: 14px; }
+  .cta .btn-lg { flex: 1; min-width: 150px; padding: 13px 16px; font-size: 15.5px; }
+
+  /* the 3 tabs: always all visible, side by side */
+  .tabs { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; border-radius: 16px; gap: 4px; padding: 5px; overflow: visible; }
+  .tabs button { white-space: normal; line-height: 1.25; padding: 10px 4px; font-size: 13.5px; border-radius: 12px; min-height: 58px; }
+
+  /* top bar */
+  .topbar .in { row-gap: 6px; }
+  .brand small { max-width: 160px; font-size: 11.5px; }
+
+  /* dashboards */
+  .stats { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .stat { padding: 13px 14px; }
+  .side-nav { display: grid; grid-template-columns: repeat(2, 1fr); }
+  .side-nav button { font-size: 14.5px; padding: 12px 10px; }
+  .filters label.f { min-width: 100%; }
+  .filters .btn { flex: 1; }
+  .modal { padding: 18px 16px; max-height: 92vh; border-radius: 14px; }
+  .modal-backdrop { padding: 8px; }
+  .months { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+  .pay-qr { justify-content: center; text-align: center; }
+  .receipt-drop, .photo-drop { flex-direction: column; text-align: center; }
+  .dl-row .btn { flex: 1; }
+  .gsearch input { font-size: 16px; }
+}
+@media (max-width: 380px) {
+}
+@media (max-width: 330px) {
+  .stats { grid-template-columns: 1fr; }
+  .stat b { font-size: 19px; }
+  .tabs button { font-size: 12.5px; }
+}
