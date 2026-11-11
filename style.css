@@ -504,3 +504,7 @@ img, canvas { max-width: 100%; }
   .stat b { font-size: 19px; }
   .tabs button { font-size: 12.5px; }
 }
+.install-btn { border: 0; background: var(--gold); color: #2b1d00; font: 700 12.5px var(--font); padding: 7px 12px; border-radius: 99px; cursor: pointer; white-space: nowrap; box-shadow: 0 4px 12px rgba(245,179,1,.35); }
+.install-btn:hover { filter: brightness(1.05); }
+/* inside the installed app: respect the phone's notch / status bar */
+@media (display-mode: standalone) { .topbar { padding-top: env(safe-area-inset-top); } footer.site { padding-bottom: calc(20px + env(safe-area-inset-bottom)); } }

@@ -22,6 +22,7 @@ const NE = {
   'Log out': 'लग आउट',
   'Switch to dark theme': 'डार्क थिममा जानुहोस्',
   'Switch to light theme': 'लाइट थिममा जानुहोस्',
+  'Install app': 'एप इन्स्टल गर्नुहोस्',
   'Change language': 'भाषा परिवर्तन गर्नुहोस्',
   'Estd. 1979': 'स्थापना: सन् १९७९',
 

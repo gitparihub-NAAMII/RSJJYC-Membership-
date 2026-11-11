@@ -1,0 +1,23 @@
+{
+  "name": "Royal Star Jan Jyoti Youth Club — Membership",
+  "short_name": "RSJJYC",
+  "description": "Become a member of Royal Star Jan Jyoti Youth Club (Estd. 1979), get your digital membership card and manage your contributions.",
+  "id": "./",
+  "start_url": "./index.html?source=app",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b2c5f",
+  "theme_color": "#0b2c5f",
+  "lang": "en",
+  "categories": ["social", "lifestyle"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Member Log In", "url": "./index.html#login", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "My Dashboard", "url": "./member.html", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] }
+  ]
+}
