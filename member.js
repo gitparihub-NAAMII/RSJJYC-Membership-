@@ -3,7 +3,6 @@ import { friendlyError } from './store.js';
 import { initPage, cardData } from './common.js';
 import { mountCard, downloadButtons, wireDownloads, verifyUrl } from './card.js';
 import { renderProfileForm } from './profile.js';
-import { addEyeButtons, attachPasswordUX } from './password.js';
 import { buildLedger, cardStatus, esc, npr, fmtDate, modal, toast, monthKey, addMonths, addYears, STATUS_TEXT, readReceipt, showReceipt } from './utils.js';
 
 const store = await initPage();
@@ -19,8 +18,6 @@ async function load() {
   if (!M) {
     // Step 2 — the full membership form lives here, behind the login
     renderProfileForm(app, store, sess, (m) => { welcome(m); load(); });
-    app.insertAdjacentHTML('beforeend', passwordPanel());
-    wirePasswordPanel();
     return;
   }
   [payments, waivers] = await Promise.all([store.listPayments(sess.uid), store.listWaivers(sess.uid)]);
@@ -86,7 +83,6 @@ function render() {
             <dt>Joined</dt><dd>${fmtDate(M.joinMs)}</dd>
           </dl>
         </div>
-        ${passwordPanel()}
       </div>
 
       <div>
@@ -125,37 +121,10 @@ function render() {
   app.querySelector('#waiveBtn').onclick = waiverDialog;
   app.querySelector('#renewBtn').onclick = doRenew;
   app.querySelectorAll('[data-receipt]').forEach((b) => (b.onclick = async () => showReceipt(await store.getReceipt(b.dataset.receipt))));
-  wirePasswordPanel();
 }
 
 const addr = (a = {}) => esc([a.tole, a.municipality && `${a.municipality}-${a.ward}`, a.district, a.province].filter(Boolean).join(', '));
 
-// ---------- change password ----------
-function passwordPanel() {
-  return `<div class="panel" id="pwPanel">
-    <h3>🔒 Change password</h3>
-    <div class="grid">
-      <label class="f">Current password<input type="password" id="cpOld" autocomplete="current-password"></label>
-      <label class="f">New password<input type="password" id="cpNew" autocomplete="new-password"></label>
-      <label class="f">Confirm new password<input type="password" id="cpNew2" autocomplete="new-password"></label>
-      <div class="err" id="cpErr"></div>
-      <button class="btn btn-block" id="cpBtn">Change password</button>
-    </div></div>`;
-}
-function wirePasswordPanel() {
-  const p = app.querySelector('#pwPanel'); if (!p) return;
-  addEyeButtons(p);
-  const ux = attachPasswordUX(p.querySelector('#cpNew'), p.querySelector('#cpNew2'));
-  p.querySelector('#cpBtn').onclick = async () => {
-    const err = p.querySelector('#cpErr'); err.textContent = '';
-    const old = p.querySelector('#cpOld').value, nw = p.querySelector('#cpNew').value;
-    if (!old) { err.textContent = 'Enter your current password.'; return; }
-    if (nw.length < 6) { err.textContent = 'Password must be at least 6 characters.'; return; }
-    if (!ux.valid()) { err.textContent = 'Passwords do not match.'; return; }
-    try { await store.changePassword(old, nw); p.querySelector('#cpOld').value = ''; ux.reset(); toast('Password changed successfully.', 'success'); }
-    catch (e) { err.textContent = e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' ? 'Current password is wrong.' : friendlyError(e); }
-  };
-}
 
 // ---------- history ----------
 function history() {

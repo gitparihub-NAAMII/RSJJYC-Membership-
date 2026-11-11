@@ -20,7 +20,7 @@ service cloud.firestore {
     match /uniques/{key} {
       allow get: if signedIn();
       allow list: if isAdmin();
-      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow create: if signedIn() && (request.resource.data.uid == request.auth.uid || isAdmin());
       allow update, delete: if isAdmin();
     }
 

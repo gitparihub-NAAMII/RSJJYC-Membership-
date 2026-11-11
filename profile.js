@@ -7,6 +7,7 @@ import { friendlyError } from './store.js';
 import { cardData } from './common.js';
 import { createDobPicker } from './datepicker.js';
 import { ageOn, addYears, monthKey, uid, compressImage, esc, npr, toast } from './utils.js';
+import { openPaymentPopup } from './payui.js';
 
 export function renderProfileForm(root, store, sess, onDone) {
   const username = sess.username || '';
@@ -72,6 +73,7 @@ export function renderProfileForm(root, store, sess, onDone) {
         <legend><span class="n">5</span> Monthly contribution</legend>
         <p class="hint" id="tierHint" style="margin-top:0">Choose your profession first to see the contribution options.</p>
         <div class="tiers" id="tiers"></div>
+        <div class="pay-status" id="payStatus"></div>
       </fieldset>
 
       <label class="check" style="margin-bottom:16px"><input type="checkbox" id="agree"> I confirm the information above is correct and agree to contribute monthly to keep my membership active.</label>
@@ -138,8 +140,35 @@ export function renderProfileForm(root, store, sess, onDone) {
     $('#tierHint').textContent = p
       ? (p.employed ? 'As a working professional, choose your monthly donation:' : 'As a student / not currently employed, choose any monthly donation that suits you:')
       : 'Choose your profession first to see the contribution options.';
-    $('#tiers').innerHTML = tiers.map((t, i) => `<label><input type="radio" name="pledge" value="${t}" ${i === 0 ? 'checked' : ''}><span>${npr(t)}<small>per month · ${npr(t * 12)}/yr</small></span></label>`).join('');
+    $('#tiers').innerHTML = tiers.map((t) => `<label><input type="radio" name="pledge" value="${t}"><span>${npr(t)}<small>per month · ${npr(t * 12)}/yr</small></span></label>`).join('');
+    firstPay = null; showPayStatus();
   });
+
+  // choosing an amount opens the payment popup (QR + receipt upload)
+  let firstPay = null;
+  function showPayStatus() {
+    const box = $('#payStatus');
+    const sel = form.querySelector('input[name=pledge]:checked');
+    if (firstPay && sel && firstPay.amount === Number(sel.value)) {
+      box.className = 'pay-status ok';
+      box.innerHTML = `<span>✔ Receipt uploaded for ${npr(firstPay.amount)} (first month).</span> <a href="#" id="payAgain">Change</a>`;
+      box.querySelector('#payAgain').onclick = (e) => { e.preventDefault(); askPayment(firstPay.amount); };
+    } else if (sel) {
+      box.className = 'pay-status no';
+      box.innerHTML = `<span>⚠ Payment receipt not uploaded yet.</span> <a href="#" id="payNow">Pay now</a>`;
+      box.querySelector('#payNow').onclick = (e) => { e.preventDefault(); askPayment(Number(sel.value)); };
+    } else { box.className = 'pay-status'; box.innerHTML = ''; }
+  }
+  async function askPayment(amount) {
+    const r = await openPaymentPopup({ amount, title: 'Pay your first month' });
+    if (r) firstPay = { amount, ...r };
+    showPayStatus();
+  }
+  $('#tiers').addEventListener('change', (e) => {
+    if (e.target.name !== 'pledge') return;
+    askPayment(Number(e.target.value));
+  });
+  $('#agree').addEventListener('change', showPayStatus);
 
   // photo
   let photoData = '';
@@ -178,6 +207,7 @@ export function renderProfileForm(root, store, sess, onDone) {
     if (!photoData) return bad(drop, 'Please upload your photo.');
     const pledgeEl = form.querySelector('input[name=pledge]:checked');
     if (!pledgeEl) return bad($('#tiers'), 'Please choose a monthly contribution.');
+    if (!firstPay || firstPay.amount !== Number(pledgeEl.value)) return bad($('#payStatus'), 'Please pay the first month and upload the payment receipt.');
     if (!$('#agree').checked) return bad($('#agree'), 'Please confirm the declaration.');
 
     const applied = new Date();
@@ -213,6 +243,19 @@ export function renderProfileForm(root, store, sess, onDone) {
     const btn = $('#regBtn'); btn.disabled = true; btn.textContent = 'Creating your membership…';
     try {
       const saved = await store.completeProfile(member, pub);
+      // first month's contribution, paid with the uploaded receipt
+      const now = new Date().toISOString(), first = monthKey(applied);
+      try {
+        await store.createPayment({
+          uid: saved.uid, memberNo: saved.memberNo, name: saved.fullName, months: [first], amount: saved.pledge,
+          method: firstPay.method, ref: firstPay.ref, status: 'approved', reviewed: false, createdAt: now, paidAt: now,
+        }, firstPay.receipt);
+        await store.updateMember(saved.uid, { paidThrough: first });
+        await store.updatePublicCard(saved.cardToken, { paidThrough: first });
+        saved.paidThrough = first;
+      } catch (pe) {
+        toast('Membership created, but the payment could not be saved. Please pay again from your dashboard.', 'error');
+      }
       onDone(saved);
     } catch (ex) {
       err.textContent = friendlyError(ex);

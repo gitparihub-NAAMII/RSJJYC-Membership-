@@ -13,6 +13,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
   <div class="topbar"><div class="in">
@@ -22,6 +23,14 @@
     <button id="logout" class="btn btn-sm btn-ghost">Log out</button>
   </div></div>
   <main class="wrap">
+    <div class="admin-top">
+      <div class="gsearch">
+        <span class="gs-ico">🔍</span>
+        <input id="gSearch" type="search" placeholder="Search members by name, username, phone or member no." autocomplete="off">
+        <div class="gs-results" id="gResults" hidden></div>
+      </div>
+      <button class="btn btn-green" id="xlsBtn">⬇ Download Excel</button>
+    </div>
     <nav class="side-nav" id="nav">
       <button class="on" data-view="overview">📊 Overview</button>
       <button data-view="members">👥 Members</button>

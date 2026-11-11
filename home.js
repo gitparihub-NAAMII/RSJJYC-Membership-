@@ -27,7 +27,7 @@ const showTab = (name) => {
   history.replaceState(null, '', '#' + name);
 };
 document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
-if (['login', 'admin'].includes(location.hash.slice(1))) showTab(location.hash.slice(1));
+if (['register', 'login', 'admin'].includes(location.hash.slice(1))) showTab(location.hash.slice(1));
 document.querySelectorAll('[data-go]').forEach((a) => a.addEventListener('click', (e) => {
   e.preventDefault(); showTab(a.dataset.go);
   $('#tabs').scrollIntoView({ behavior: 'smooth', block: 'start' });

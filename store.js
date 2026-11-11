@@ -42,6 +42,11 @@ const memberKeys = (m) => [...new Set([
   ...uniqueKeys(m).map((k) => k.id),
   ...(m.username ? [keyForUsername(m.username).id] : []),
 ])];
+/** which uniqueness keys to claim / release when a member's phone or e-mail changes */
+const keyDiff = (m, patch) => {
+  const before = memberKeys(m), after = memberKeys({ ...m, ...patch });
+  return { add: after.filter((k) => !before.includes(k)), remove: before.filter((k) => !after.includes(k)) };
+};
 const keyForUsername = (u) => { u = normalizeUsername(u); return u.includes('@') ? { id: 'email_' + u, code: 'dup-email' } : { id: 'phone_' + u, code: 'dup-phone' }; };
 const usernameFromEmail = (e = '') => (e.endsWith('@' + PHONE_LOGIN_DOMAIN) ? e.split('@')[0] : e);
 
@@ -138,6 +143,18 @@ async function firebaseBackend() {
     listWaivers: (u) => all(u ? F.query(F.collection(db, 'waivers'), F.where('uid', '==', u)) : F.collection(db, 'waivers')),
     updatePayment: (id, patch) => F.updateDoc(d('payments', id), patch),
     updateWaiver: (id, patch) => F.updateDoc(d('waivers', id), patch),
+    /** Admin: edit a member; keeps phone/e-mail uniqueness and the public card in sync */
+    async adminUpdateMember(m, patch, pubPatch) {
+      const { add, remove } = keyDiff(m, patch);
+      await F.runTransaction(db, async (tx) => {
+        const snaps = await Promise.all(add.map((k) => tx.get(d('uniques', k))));
+        snaps.forEach((s, i) => { if (s.exists() && s.data().uid !== m.uid) fail(add[i].startsWith('phone_') ? 'dup-phone' : 'dup-email'); });
+        add.forEach((k) => tx.set(d('uniques', k), { uid: m.uid, createdAt: new Date().toISOString() }));
+        remove.forEach((k) => tx.delete(d('uniques', k)));
+        tx.update(d('members', m.uid), patch);
+        if (m.cardToken && pubPatch) tx.update(d('publicCards', m.cardToken), pubPatch);
+      });
+    },
     /** Admin: remove a member's membership data everywhere (the login itself stays in Firebase Authentication). */
     async deleteMember(m) {
       const [pays, wvs] = await Promise.all([
@@ -246,6 +263,15 @@ function demoBackend() {
     async listWaivers(u) { return clone(Object.values(db.waivers).filter((p) => !u || p.uid === u)); },
     async updatePayment(id, patch) { Object.assign(db.payments[id], patch); save(); },
     async updateWaiver(id, patch) { Object.assign(db.waivers[id], patch); save(); },
+    async adminUpdateMember(m, patch, pubPatch) {
+      const { add, remove } = keyDiff(m, patch);
+      add.forEach((k) => { if (db.uniques[k] && db.uniques[k].uid !== m.uid) fail(k.startsWith('phone_') ? 'dup-phone' : 'dup-email'); });
+      add.forEach((k) => (db.uniques[k] = { uid: m.uid }));
+      remove.forEach((k) => delete db.uniques[k]);
+      Object.assign(db.members[m.uid], patch);
+      if (m.cardToken && pubPatch && db.publicCards[m.cardToken]) Object.assign(db.publicCards[m.cardToken], pubPatch);
+      save();
+    },
     async deleteMember(m) {
       Object.values(db.payments).filter((p) => p.uid === m.uid).forEach((p) => { delete db.payments[p.id]; delete db.receipts[p.id]; });
       Object.values(db.waivers).filter((w) => w.uid === m.uid).forEach((w) => delete db.waivers[w.id]);
