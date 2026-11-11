@@ -6,14 +6,14 @@ A static website (HTML + CSS + JavaScript) backed by **Firebase Authentication +
 - **Digital membership card**: download it as PNG, JPG or PDF, or print it on A4 with cut marks. The card shows the photo, membership number, member type (General Member / BOD / …), validity dates and a unique QR code.
 - **QR verification page** (`verify.html`): shows only the card and its live status (Active / About to expire / Expired). An expired card shows a blinking red "Your card is expired – renew soon" banner. It never shows any fee details.
 - **Member dashboard**: days left until expiry, total contributed, outstanding dues, and a month-by-month record (green = paid, red = missed, amber = due, blue = waiting for admin, grey = waived). Members can pay a contribution, ask for a waiver, and renew once their dues are cleared.
-- **English / नेपाली switch** and **dark / light theme switch** in the top bar of every page. The choice is remembered. Translations live in `js/i18n.js` (the `NE` dictionary); the printed membership card always stays in English.
+- **English / नेपाली switch** and **dark / light theme switch** in the top bar of every page. The choice is remembered. Translations live in `i18n.js` (the `NE` dictionary); the printed membership card always stays in English.
 - **Admin dashboard**: totals, new / expiring / expired members, interactive charts (Chart.js), filters (by date, status or type), CSV export, and approve/reject for payments and waivers. Every decision needs a reason.
 
 ## Membership number
 
 `026-RSJJYC-001-PC` = last 3 digits of the year you applied · `RSJJYC` · a running number for that year (001, 002, …) · first-name initial + surname initial. The number restarts at 001 each year (2027 → `027-RSJJYC-001-…`).
 
-## Status rules (edit in `js/config.js → RULES`)
+## Status rules (edit in `config.js → RULES`)
 
 | Status | When |
 |---|---|
@@ -43,9 +43,9 @@ Demo admin login: username `RSJJYC026`, password as agreed.
 1. Go to https://console.firebase.google.com → **Add project**.
 2. **Build → Authentication → Get started → Sign-in method → Email/Password → Enable.**
 3. **Build → Firestore Database → Create database** (production mode, region `asia-south1` is closest to Nepal).
-4. **Project settings → General → Your apps → Web (</>)**: register the app and copy the `firebaseConfig` into `js/firebase-config.js`.
+4. **Project settings → General → Your apps → Web (</>)**: register the app and copy the `firebaseConfig` into `firebase-config.js`.
 5. Create the admin account:
-   - Authentication → Users → **Add user** → e-mail `rsjjyc026@admin.rsjjyc.app` (the `ADMIN.email` in `js/config.js`), with the admin password.
+   - Authentication → Users → **Add user** → e-mail `rsjjyc026@admin.rsjjyc.app` (the `ADMIN.email` in `config.js`), with the admin password.
    - Copy that user's **UID**. In Firestore, create the collection `admins`, add a document whose **ID is that UID**, and give it the field `role: "admin"`.
    - The admin then logs in on the site with username `RSJJYC026` and that password.
 6. Deploy the security rules (the `firestore.rules` file):
@@ -65,7 +65,7 @@ Demo admin login: username `RSJJYC026`, password as agreed.
    - **Firebase Hosting**: `firebase deploy --only hosting` → `https://<project>.web.app`, or
    - **GitHub Pages**: push the repo, then Settings → Pages → Deploy from branch `main` / root.  
      Then add the Pages domain under Authentication → Settings → **Authorized domains**.
-8. Set `ORG.siteUrl` in `js/config.js` to the final public address, so QR codes always point to the live site.
+8. Set `ORG.siteUrl` in `config.js` to the final public address, so QR codes always point to the live site.
 
 > Photos are resized to about 40 KB and stored inside Firestore, so you do **not** need Firebase Storage or the paid Blaze plan.
 
@@ -96,11 +96,11 @@ git push -u origin main
 
 | What | Where |
 |---|---|
-| Logo | `assets/logo.png` (replace the file to change it) |
-| Organisation full name | `ORG.fullName` in `js/config.js` (currently Royal Star Jan Jyoti Youth Club, Estd. 1979) |
-| Nepali translations / motivational lines | `NE` in `js/i18n.js`; hook lines in `js/home.js` (`HOOKS`) |
-| Profession list (and which ones count as "employed") | `PROFESSIONS` in `js/config.js` |
-| Address options | `PROVINCES` in `js/config.js` |
+| Logo | `logo.png` (replace the file to change it) |
+| Organisation full name | `ORG.fullName` in `config.js` (currently Royal Star Jan Jyoti Youth Club, Estd. 1979) |
+| Nepali translations / motivational lines | `NE` in `i18n.js`; hook lines in `home.js` (`HOOKS`) |
+| Profession list (and which ones count as "employed") | `PROFESSIONS` in `config.js` |
+| Address options | `PROVINCES` in `config.js` |
 | Contribution amounts | `DONATION_TIERS` |
 | Member types shown on card | `MEMBER_TYPES` (admin changes a member's type in Members → click row) |
 | Payment methods | `PAYMENT_METHODS` |
@@ -112,14 +112,18 @@ index.html        landing page + Register / Member log in / Admin log in tabs
 member.html       member dashboard
 admin.html        admin dashboard
 verify.html       public QR verification page
-css/style.css     all styling (incl. the card design)
-js/config.js      organisation settings, dropdown data, rules
-js/firebase-config.js   paste Firebase config here
-js/store.js       data layer (Firebase or demo/localStorage)
-js/utils.js       dates, ledger, status, membership number logic
-js/card.js        card rendering, QR, PNG/JPG/PDF/print export
-js/datepicker.js  AD / BS (Nepali) date-of-birth picker
+style.css         all styling (incl. the card design)
+config.js         organisation settings, dropdown data, rules
+firebase-config.js      Firebase config
+store.js          data layer (Firebase or demo/localStorage)
+utils.js          dates, ledger, status, membership number logic
+card.js           card rendering, QR, PNG/JPG/PDF/print export
+datepicker.js     AD / BS (Nepali) date-of-birth picker
 firestore.rules   database security rules
+logo.png          club logo
+i18n.js           English / Nepali translations
+home.js, member.js, admin.js   page logic
+(All files sit in one folder — upload them all together to GitHub.)
 ```
 
 ## Known limitations

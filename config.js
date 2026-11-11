@@ -8,14 +8,14 @@ export const ORG = {
   fullName: 'Royal Star Jan Jyoti Youth Club',
   established: 1979,
   tagline: 'Membership Card',
-  logo: 'assets/logo.png',
+  logo: 'logo.png',
   facebook: 'https://www.facebook.com/RSJJYC/',
   address: 'Nepal',
   // Membership number middle code -> 026-RSJJYC-001-PC
   memberCode: 'RSJJYC',
   // Public address of the deployed site, used inside QR codes, e.g.
   // 'https://your-project.web.app/'. Leave empty to use the current address.
-  siteUrl: '',
+  siteUrl: 'https://gitparihub-naamii.github.io/RSJJYC-Membership-/',
 };
 
 // Admin login. In Firebase mode the password lives ONLY in Firebase Auth
