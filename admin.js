@@ -7,6 +7,7 @@ import { buildLedger, cardStatus, esc, npr, fmtDate, isoDate, modal, toast, mont
 // Admin popups close only with the ✕ button (clicking outside does nothing)
 setModalDefaults({ backdropClose: false });
 import { nextDue, milestone, adminMessage } from './reminders.js';
+import { changesTable } from './changereq.js';
 const needsReview = (p) => p.status === 'pending' || (p.status === 'approved' && p.reviewed === false);
 
 const store = await initPage();
@@ -15,7 +16,7 @@ if (!sess || sess.role !== 'admin') { location.replace('index.html#admin'); thro
 document.getElementById('logout').onclick = async () => { await store.logout(); location.href = 'index.html'; };
 
 const view = document.getElementById('view');
-let members = [], payments = [], waivers = [], current = 'overview';
+let members = [], payments = [], waivers = [], changeReqs = [], current = 'overview';
 const charts = [];
 // shared filters: year / month apply to members (join date) and payments (payment date)
 const filt = { q: '', chip: 'all', from: '', to: '', type: '', year: '', month: '' };
@@ -23,10 +24,10 @@ const pfilt = { q: '', status: '' };
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 async function load() {
-  [members, payments, waivers] = await Promise.all([store.listMembers(), store.listPayments(), store.listWaivers()]);
+  [members, payments, waivers, changeReqs] = await Promise.all([store.listMembers(), store.listPayments(), store.listWaivers(), store.listChangeRequests().catch(() => [])]);
   members.forEach(enrich);
   members.sort((a, b) => b.joinMs - a.joinMs);
-  const pend = payments.filter(needsReview).length + waivers.filter((w) => w.status === 'pending').length;
+  const pend = payments.filter(needsReview).length + waivers.filter((w) => w.status === 'pending').length + changeReqs.filter((c) => c.status === 'pending').length;
   const b = document.getElementById('apBadge'); b.hidden = !pend; b.textContent = pend;
   const nRem = toRemind().length; const rb = document.getElementById('rmBadge'); rb.hidden = !nRem; rb.textContent = nRem;
   show(current);
@@ -104,7 +105,7 @@ function overview() {
   const cnt = (c) => members.filter((m) => m._S.code === c || (c === 'expired' && m._S.code === 'inactive')).length;
   const owing = members.filter((m) => m._L.outstanding > 0);
   const dues = owing.reduce((a, m) => a + m._L.outstanding, 0);
-  const pend = payments.filter(needsReview).length + waivers.filter((w) => w.status === 'pending').length;
+  const pend = payments.filter(needsReview).length + waivers.filter((w) => w.status === 'pending').length + changeReqs.filter((c) => c.status === 'pending').length;
   const alert = (n) => (n > 0 ? 'red alert' : 'green');
 
   view.innerHTML = `
@@ -364,6 +365,7 @@ function approvals() {
         </div>`).join('') : '<div class="empty">✔ No payments waiting</div>'}
       </div>
     </div>
+    ${changeRequestsPanel()}
     <div class="panel"><h3>Waiver decisions history</h3>
       ${done.length ? `<div class="tbl-wrap"><table class="t"><thead><tr><th>Decided</th><th>Member</th><th>Months</th><th>Member reason</th><th>Decision</th><th>Admin reason</th></tr></thead><tbody>
       ${done.map((w) => `<tr class="${w.status === 'approved' ? 'row-green' : 'row-red'}"><td>${fmtDate(w.reviewedAt)}</td><td>${esc(w.name)}<br><small class="mono hint">${esc(w.memberNo)}</small></td><td>${months(w)}</td><td>${esc(w.reason)}</td><td><span class="pill ${w.status}">${w.status}</span></td><td>${esc(w.adminReason)}</td></tr>`).join('')}
@@ -371,6 +373,7 @@ function approvals() {
     </div>`;
 
   wireReceipts(view);
+  wireChangeRequests(view);
   view.querySelectorAll('.req-card [data-act]').forEach((btn) => btn.addEventListener('click', async () => {
     const card = btn.closest('.req-card'); const kind = card.dataset.kind; const id = card.dataset.id; const act = btn.dataset.act;
     const ta = card.querySelector('textarea'); const reason = ta.value.trim();
@@ -385,6 +388,43 @@ function approvals() {
       toast(`${kind === 'waiver' ? 'Waiver' : 'Payment'} ${act}.`, act === 'approved' ? 'success' : 'info');
       load();
     } catch (e) { toast(friendlyError(e), 'error'); }
+  }));
+}
+
+// ---------- member detail change requests ----------
+function changeRequestsPanel() {
+  const pend = changeReqs.filter((c) => c.status === 'pending').sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  return `<div class="panel"><h3>📝 Detail change requests (${pend.length})</h3>
+    <p class="hint" style="margin-top:-6px">Members cannot change their details themselves. Approving a request updates their details and membership card.</p>
+    ${pend.length ? pend.map((c) => `<div class="req-card" data-cr="${esc(c.id)}">
+      <div class="top"><b>${esc(c.name)} <span class="mono hint">${esc(c.memberNo)}</span></b><small class="hint">${fmtDate(c.createdAt)}</small></div>
+      ${c.note ? `<p><b>Member's note:</b> ${esc(c.note)}</p>` : ''}
+      ${changesTable(c)}
+      <label class="f" style="margin-top:8px">Admin reason <span class="hint">(required to reject)</span><textarea rows="2" placeholder="Why are you approving / rejecting?"></textarea></label>
+      <div class="actions" style="margin-top:8px"><button class="btn btn-green btn-sm" data-cra="approve">Approve changes</button><button class="btn btn-red btn-sm" data-cra="reject">Reject</button></div>
+    </div>`).join('') : '<div class="empty">✔ No change requests waiting</div>'}
+  </div>`;
+}
+function wireChangeRequests(root) {
+  root.querySelectorAll('[data-cra]').forEach((btn) => btn.addEventListener('click', async () => {
+    const card = btn.closest('[data-cr]'); const req = changeReqs.find((c) => c.id === card.dataset.cr);
+    const ta = card.querySelector('textarea'); const reason = ta.value.trim();
+    const approve = btn.dataset.cra === 'approve';
+    if (!approve && reason.length < 5) { ta.classList.add('bad'); ta.focus(); return toast('Please write the reason for this decision.', 'error'); }
+    const review = { reviewedAt: new Date().toISOString(), reviewedBy: sess.uid, adminReason: reason };
+    const m = members.find((x) => x.uid === req.uid);
+    btn.disabled = true;
+    try {
+      if (approve) {
+        if (!m) throw new Error('Member not found');
+        await store.approveChangeRequest(req, m, review);
+        toast('Changes approved — member details and card updated.', 'success');
+      } else {
+        await store.rejectChangeRequest(req.id, review);
+        toast('Change request rejected.', 'info');
+      }
+      load();
+    } catch (e) { toast(friendlyError(e), 'error'); btn.disabled = false; }
   }));
 }
 

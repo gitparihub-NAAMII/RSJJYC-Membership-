@@ -8,6 +8,20 @@ service cloud.firestore {
     function onlyKeys(keys) { return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys); }
     // a renewal may push expiry at most ~14 months ahead of today
     function renewalOk() { return !('expiryMs' in request.resource.data) || request.resource.data.expiryMs <= request.time.toMillis() + 430 * 86400000; }
+    // An admin may change member details ONLY to apply a member's own change request,
+    // in the same write that approves it, and only the fields that request asked for.
+    function crPath(id) { return /databases/$(database)/documents/changeRequests/$(id); }
+    function appliesApprovedRequest(memberUid) {
+      return isAdmin()
+        && request.resource.data.get('lastChangeRequest', '') != ''
+        && approvedNow(request.resource.data.lastChangeRequest, memberUid);
+    }
+    function approvedNow(id, memberUid) {
+      return get(crPath(id)).data.status == 'pending'
+        && getAfter(crPath(id)).data.status == 'approved'
+        && getAfter(crPath(id)).data.uid == memberUid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(getAfter(crPath(id)).data.changes.keys().concat(['lastChangeRequest']));
+    }
 
     // admins/{uid} documents are created by hand in the Firebase console
     match /admins/{uid} {
@@ -20,8 +34,10 @@ service cloud.firestore {
     match /uniques/{key} {
       allow get: if signedIn();
       allow list: if isAdmin();
-      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
-      allow update, delete: if false;
+      // members claim their own; an admin claims / releases them only when applying an approved change request
+      allow create: if signedIn() && (request.resource.data.uid == request.auth.uid || isAdmin());
+      allow update: if false;
+      allow delete: if isAdmin();
     }
 
     // membership-number sequence per year (can only ever go up by one)
@@ -40,6 +56,7 @@ service cloud.firestore {
       // Admins may NOT edit member details or delete members. They can only set the
       // member type, the paid-through month and the active / inactive flag.
       allow update: if (isAdmin() && onlyKeys(['memberType', 'paidThrough', 'inactive']))
+        || appliesApprovedRequest(uid)
         || (signedIn() && request.auth.uid == uid && onlyKeys(['expiryMs', 'periods', 'renewals', 'paidThrough']) && renewalOk());
       allow delete: if false;
     }
@@ -52,7 +69,18 @@ service cloud.firestore {
         && request.resource.data.memberType == 'General Member'
         && request.resource.data.paidThrough == null;
       allow update: if (isAdmin() && onlyKeys(['memberType', 'paidThrough', 'inactive']))
+        || appliesApprovedRequest(resource.data.uid)
         || (signedIn() && resource.data.uid == request.auth.uid && onlyKeys(['expiryMs', 'periods', 'paidThrough']) && renewalOk());
+      allow delete: if false;
+    }
+
+    // Member detail change requests: the member asks, the admin approves or rejects.
+    match /changeRequests/{id} {
+      allow read: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.status == 'pending';
+      allow update: if isAdmin() && resource.data.status == 'pending'
+        && request.resource.data.status in ['approved', 'rejected']
+        && onlyKeys(['status', 'reviewedAt', 'reviewedBy', 'adminReason']);
       allow delete: if false;
     }
 

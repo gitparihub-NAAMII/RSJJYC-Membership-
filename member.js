@@ -3,6 +3,7 @@ import { friendlyError } from './store.js';
 import { initPage, cardData } from './common.js';
 import { mountCard, downloadButtons, wireDownloads, verifyUrl } from './card.js';
 import { renderProfileForm } from './profile.js';
+import { changeSectionHtml, openChangeForm } from './changereq.js';
 import { nextDue, reminderText, syncReminders, enableNotifications, notifyState, downloadCalendar } from './reminders.js';
 import { buildLedger, cardStatus, esc, npr, fmtDate, modal, toast, monthKey, addMonths, addYears, STATUS_TEXT, readReceipt, showReceipt, checkUpload } from './utils.js';
 
@@ -12,7 +13,7 @@ const sess = await store.session();
 if (!sess || sess.role !== 'member') { location.replace(sess?.role === 'admin' ? 'admin.html' : 'index.html#login'); throw new Error('redirect'); }
 document.getElementById('logout').onclick = async () => { await store.logout(); location.href = 'index.html'; };
 
-let M, payments, waivers, L, ST;
+let M, payments, waivers, changeReqs = [], L, ST;
 
 async function load() {
   M = await store.getMember(sess.uid);
@@ -21,7 +22,7 @@ async function load() {
     renderProfileForm(app, store, sess, (m) => { welcome(m); load(); });
     return;
   }
-  [payments, waivers] = await Promise.all([store.listPayments(sess.uid), store.listWaivers(sess.uid)]);
+  [payments, waivers, changeReqs] = await Promise.all([store.listPayments(sess.uid), store.listWaivers(sess.uid), store.listChangeRequests(sess.uid).catch(() => [])]);
   L = buildLedger(M, payments, waivers);
   ST = cardStatus({ ...M, paidThrough: L.paidThrough });
   render();
@@ -100,6 +101,7 @@ function render() {
             <dt>Temporary</dt><dd>${addr(M.temporaryAddress)}</dd>
             <dt>Joined</dt><dd>${fmtDate(M.joinMs)}</dd>
           </dl>
+          ${changeSectionHtml(changeReqs)}
         </div>
       </div>
 
@@ -138,6 +140,7 @@ function render() {
   app.querySelector('#payBtn').onclick = payDialog;
   app.querySelector('#waiveBtn').onclick = waiverDialog;
   app.querySelector('#renewBtn').onclick = doRenew;
+  app.querySelector('#crBtn')?.addEventListener('click', () => openChangeForm(M, store, load));
 
   // ---- reminders ----
   app.querySelector('#dueNow')?.addEventListener('click', payDialog);

@@ -37,6 +37,15 @@ export const uniqueKeys = ({ phone, email }) => [
   ...(phone ? [{ id: 'phone_' + phone, code: 'dup-phone' }] : []),
   ...(email ? [{ id: 'email_' + email.toLowerCase(), code: 'dup-email' }] : []),
 ];
+/** phone / e-mail markers to claim and release when an approved change alters them (the login username's marker is kept) */
+const changeKeys = (m, changes) => {
+  const keep = m.username ? keyForUsername(m.username).id : null;
+  const before = uniqueKeys(m).map((k) => k.id), after = uniqueKeys({ ...m, ...changes }).map((k) => k.id);
+  return { add: after.filter((k) => !before.includes(k) && k !== keep), remove: before.filter((k) => !after.includes(k) && k !== keep) };
+};
+/** the part of a change that is printed on the membership card / QR page */
+const CARD_FIELDS = ['fullName', 'dob', 'bloodGroup', 'photo'];
+const cardPart = (changes) => Object.fromEntries(Object.entries(changes).filter(([k]) => CARD_FIELDS.includes(k)));
 const keyForUsername = (u) => { u = normalizeUsername(u); return u.includes('@') ? { id: 'email_' + u, code: 'dup-email' } : { id: 'phone_' + u, code: 'dup-phone' }; };
 const usernameFromEmail = (e = '') => (e.endsWith('@' + PHONE_LOGIN_DOMAIN) ? e.split('@')[0] : e);
 
@@ -133,6 +142,29 @@ async function firebaseBackend() {
     listWaivers: (u) => all(u ? F.query(F.collection(db, 'waivers'), F.where('uid', '==', u)) : F.collection(db, 'waivers')),
     updatePayment: (id, patch) => F.updateDoc(d('payments', id), patch),
     updateWaiver: (id, patch) => F.updateDoc(d('waivers', id), patch),
+
+    // ---- member detail change requests (member asks, admin approves) ----
+    async createChangeRequest(r) { const x = await F.addDoc(F.collection(db, 'changeRequests'), r); return x.id; },
+    listChangeRequests: (u) => all(u ? F.query(F.collection(db, 'changeRequests'), F.where('uid', '==', u)) : F.collection(db, 'changeRequests')),
+    rejectChangeRequest: (id, review) => F.updateDoc(d('changeRequests', id), { status: 'rejected', ...review }),
+    async approveChangeRequest(req, m, review) {
+      const { add, remove } = changeKeys(m, req.changes);
+      const pub = cardPart(req.changes);
+      await F.runTransaction(db, async (tx) => {
+        const snaps = await Promise.all(add.map((k) => tx.get(d('uniques', k))));
+        snaps.forEach((s, i) => { if (s.exists() && s.data().uid !== m.uid) fail(add[i].startsWith('phone_') ? 'dup-phone' : 'dup-email'); });
+        tx.update(d('changeRequests', req.id), { status: 'approved', ...review });
+        add.forEach((k) => tx.set(d('uniques', k), { uid: m.uid, createdAt: new Date().toISOString() }));
+        remove.forEach((k) => tx.delete(d('uniques', k)));
+        tx.update(d('members', m.uid), { ...req.changes, lastChangeRequest: req.id });
+        if (m.cardToken && Object.keys(pub).length) tx.update(d('publicCards', m.cardToken), { ...pub, lastChangeRequest: req.id });
+      });
+    },
+    /** member-side check before sending a request: is the new phone / e-mail free? */
+    async checkFree(m, changes) {
+      const { add } = changeKeys(m, changes);
+      for (const k of add) { const s = await F.getDoc(d('uniques', k)); if (s.exists() && s.data().uid !== m.uid) fail(k.startsWith('phone_') ? 'dup-phone' : 'dup-email'); }
+    },
   };
 }
 
@@ -143,7 +175,7 @@ function demoBackend() {
   const KEY = 'rsjjyc_demo_db_v2';
   const SKEY = 'rsjjyc_demo_session';
   const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } };
-  const db = Object.assign({ users: {}, members: {}, publicCards: {}, payments: {}, receipts: {}, waivers: {}, counters: {}, uniques: {} }, load());
+  const db = Object.assign({ users: {}, members: {}, publicCards: {}, payments: {}, receipts: {}, waivers: {}, counters: {}, uniques: {}, changeRequests: {} }, load());
   const save = () => localStorage.setItem(KEY, JSON.stringify(db));
   const getSession = () => { try { return JSON.parse(localStorage.getItem(SKEY)); } catch { return null; } };
   const setSession = (s) => { s ? localStorage.setItem(SKEY, JSON.stringify(s)) : localStorage.removeItem(SKEY); return s; };
@@ -222,6 +254,24 @@ function demoBackend() {
     async listWaivers(u) { return clone(Object.values(db.waivers).filter((p) => !u || p.uid === u)); },
     async updatePayment(id, patch) { Object.assign(db.payments[id], patch); save(); },
     async updateWaiver(id, patch) { Object.assign(db.waivers[id], patch); save(); },
+    async createChangeRequest(r) { const id = rid(16); db.changeRequests[id] = { ...r, id }; save(); return id; },
+    async listChangeRequests(u) { return clone(Object.values(db.changeRequests).filter((x) => !u || x.uid === u)); },
+    async rejectChangeRequest(id, review) { Object.assign(db.changeRequests[id], { status: 'rejected', ...review }); save(); },
+    async approveChangeRequest(req, m, review) {
+      const { add, remove } = changeKeys(m, req.changes);
+      add.forEach((k) => { if (db.uniques[k] && db.uniques[k].uid !== m.uid) fail(k.startsWith('phone_') ? 'dup-phone' : 'dup-email'); });
+      Object.assign(db.changeRequests[req.id], { status: 'approved', ...review });
+      add.forEach((k) => (db.uniques[k] = { uid: m.uid }));
+      remove.forEach((k) => delete db.uniques[k]);
+      Object.assign(db.members[m.uid], req.changes, { lastChangeRequest: req.id });
+      const pub = cardPart(req.changes);
+      if (m.cardToken && db.publicCards[m.cardToken]) Object.assign(db.publicCards[m.cardToken], pub, { lastChangeRequest: req.id });
+      save();
+    },
+    async checkFree(m, changes) {
+      const { add } = changeKeys(m, changes);
+      add.forEach((k) => { if (db.uniques[k] && db.uniques[k].uid !== m.uid) fail(k.startsWith('phone_') ? 'dup-phone' : 'dup-email'); });
+    },
   };
 }
 

@@ -720,3 +720,14 @@ button, .btn, .app-choice, .tabs button, .chips button, .side-nav button, .stat.
 /* v13: INACTIVE status (admin rejected a payment receipt) */
 .st-inactive .mc-status { color: #fff; background: #dc2626; padding: 5px 14px; border-radius: 7px; box-shadow: 0 0 0 3px rgba(220,38,38,.35); }
 .pill.inactive { background: #dc2626; color: #fff; }
+
+/* v14: member detail change requests */
+.cr-box { margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--line); }
+.cr-state { border-radius: 12px; padding: 12px; margin-bottom: 12px; font-size: 14px; }
+.cr-state.pending { background: var(--blue-bg); color: var(--blue-fg); border: 1px solid var(--blue-bd); }
+.cr-state.ok { background: var(--green-bg); color: var(--green-fg); border: 1px solid var(--green-bd); }
+.cr-state.no { background: var(--red-bg); color: var(--red-fg); border: 1px solid var(--red-bd); }
+.cr-state .tbl-wrap { margin-top: 10px; background: var(--surface); }
+.cr-tbl table.t { min-width: 420px; }
+.cr-tbl td.cr-new { background: var(--row-green); font-weight: 600; }
+.cr-photo { width: 60px; height: 75px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); display: block; }
