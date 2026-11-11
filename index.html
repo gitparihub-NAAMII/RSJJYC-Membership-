@@ -11,9 +11,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Mukta:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/nepali-date-converter@3.3.4/dist/nepali-date-converter.umd.js"></script>
 </head>
 <body>
   <div class="topbar"><div class="in">
@@ -54,81 +51,21 @@
       <button data-tab="admin" role="tab">🛡️ Admin Log In</button>
     </nav>
 
-    <!-- ===================== REGISTER ===================== -->
-    <section id="tab-register" class="panel">
-      <h2>New Member Registration</h2>
-      <p class="sub">Fields marked * are required. Your membership number is generated automatically.</p>
-      <form id="regForm" novalidate>
-        <fieldset>
-          <legend><span class="n">1</span> Personal details</legend>
-          <div class="grid g3">
-            <label class="f">First name <span class="req">*</span><input name="firstName" required autocomplete="given-name"></label>
-            <label class="f">Middle name<input name="middleName" autocomplete="additional-name"></label>
-            <label class="f">Surname <span class="req">*</span><input name="lastName" required autocomplete="family-name"></label>
-          </div>
-          <div class="grid g2" style="margin-top:14px">
-            <div class="f"><label class="f">Date of birth <span class="req">*</span></label><div id="dobPicker"></div></div>
-            <div class="f"><label class="f">Age (as of application date)</label><div class="age-box" id="ageBox"><small>Select your date of birth</small></div></div>
-          </div>
-          <div class="grid g3" style="margin-top:14px">
-            <label class="f">Gender
-              <select name="gender"><option value="">Select</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option><option value="Prefer not to say">Prefer not to say</option></select>
-            </label>
-            <label class="f">Mobile number <span class="req">*</span><input name="phone" inputmode="tel" placeholder="98XXXXXXXX" required autocomplete="tel"></label>
-            <label class="f">E-mail<input name="email" type="email" placeholder="you@example.com" autocomplete="email"></label>
-          </div>
-        </fieldset>
-
-        <fieldset>
-          <legend><span class="n">2</span> Profession</legend>
-          <div class="grid g2">
-            <label class="f">What is your profession? <span class="req">*</span><select name="profession" id="profession" required></select></label>
-            <label class="f" id="otherProfWrap" hidden>Please specify<input name="professionOther"></label>
-          </div>
-        </fieldset>
-
-        <fieldset>
-          <legend><span class="n">3</span> Address</legend>
-          <h3 style="font-size:14px;margin:0 0 10px">Permanent address</h3>
-          <div class="grid g4" data-addr="permanent"></div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin:18px 0 10px;gap:10px;flex-wrap:wrap">
-            <h3 style="font-size:14px;margin:0">Temporary address</h3>
-            <label class="check"><input type="checkbox" id="sameAddr"> Same as permanent address</label>
-          </div>
-          <div class="grid g4" data-addr="temporary"></div>
-        </fieldset>
-
-        <fieldset>
-          <legend><span class="n">4</span> Photo</legend>
-          <label class="photo-drop" id="photoDrop">
-            <div class="pv" id="photoPv">📷</div>
-            <div><b>Upload a passport-size photo</b> <span class="req">*</span><br><span class="hint">PNG or JPG, up to 5 MB. Face clearly visible — this photo is printed on your membership card.</span></div>
-            <input type="file" id="photo" accept="image/png,image/jpeg">
-          </label>
-        </fieldset>
-
-        <fieldset>
-          <legend><span class="n">5</span> Login credentials</legend>
-          <div class="seg" id="userTypeSeg">
-            <label><input type="radio" name="userType" value="phone" checked><span>Use mobile number</span></label>
-            <label><input type="radio" name="userType" value="email"><span>Use e-mail</span></label>
-          </div>
-          <div class="grid g3">
-            <label class="f">Username<input id="usernamePreview" readonly placeholder="Filled from your mobile / e-mail"></label>
-            <label class="f">Password <span class="req">*</span><input type="password" name="password" minlength="6" required autocomplete="new-password"><div class="pw-meter"><i id="pwBar"></i></div></label>
-            <label class="f">Confirm password <span class="req">*</span><input type="password" name="password2" required autocomplete="new-password"></label>
-          </div>
-        </fieldset>
-
-        <fieldset>
-          <legend><span class="n">6</span> Monthly contribution</legend>
-          <p class="hint" id="tierHint" style="margin-top:0">Choose your profession first to see the contribution options.</p>
-          <div class="tiers" id="tiers"></div>
-        </fieldset>
-
-        <label class="check" style="margin-bottom:16px"><input type="checkbox" id="agree" required> I confirm the information above is correct and agree to contribute monthly to keep my membership active.</label>
+    <!-- ===================== REGISTER (account only) ===================== -->
+    <section id="tab-register" class="panel narrow">
+      <h2>Create your member account</h2>
+      <p class="sub">Step 1 of 2: set up your username and password. After that you will fill in your membership details inside your own member dashboard.</p>
+      <ol class="steps"><li class="on">Create account</li><li>Fill in membership details</li><li>Get your card</li></ol>
+      <form id="regForm" class="grid" novalidate>
+        <label class="f">Mobile number or e-mail <span class="req">*</span>
+          <input name="username" id="regUser" required autocomplete="username" placeholder="98XXXXXXXX or name@gmail.com">
+        </label>
+        <small class="hint" id="userHint">This becomes your username. Use your e-mail if you want to be able to reset a forgotten password yourself.</small>
+        <label class="f">Password <span class="req">*</span><input type="password" name="password" id="regPw" minlength="6" required autocomplete="new-password"></label>
+        <label class="f">Confirm password <span class="req">*</span><input type="password" name="password2" id="regPw2" required autocomplete="new-password"></label>
         <div class="err" id="regErr"></div>
-        <button class="btn btn-primary btn-block" id="regBtn" type="submit">Register &amp; generate my membership card</button>
+        <button class="btn btn-primary btn-block" id="regBtn" type="submit">Create my account</button>
+        <p class="hint" style="text-align:center;margin:0">One membership per person — each mobile number and e-mail can be used only once.</p>
       </form>
     </section>
 
@@ -141,6 +78,7 @@
         <label class="f">Password<input type="password" name="password" required autocomplete="current-password"></label>
         <div class="err" id="loginErr"></div>
         <button class="btn btn-primary btn-block" type="submit">Log in</button>
+        <a href="#" id="forgotLink" class="forgot">Forgot password?</a>
       </form>
     </section>
 

@@ -1,8 +1,10 @@
-import { PAYMENT_METHODS, RULES } from './config.js';
+import { PAYMENT_METHODS, PAYMENT, RULES, ORG } from './config.js';
 import { friendlyError } from './store.js';
 import { initPage, cardData } from './common.js';
 import { mountCard, downloadButtons, wireDownloads, verifyUrl } from './card.js';
-import { buildLedger, cardStatus, esc, npr, fmtDate, modal, toast, monthKey, addMonths, addYears, STATUS_TEXT } from './utils.js';
+import { renderProfileForm } from './profile.js';
+import { addEyeButtons, attachPasswordUX } from './password.js';
+import { buildLedger, cardStatus, esc, npr, fmtDate, modal, toast, monthKey, addMonths, addYears, STATUS_TEXT, readReceipt, showReceipt } from './utils.js';
 
 const store = await initPage();
 const app = document.getElementById('app');
@@ -13,11 +15,29 @@ document.getElementById('logout').onclick = async () => { await store.logout(); 
 let M, payments, waivers, L, ST;
 
 async function load() {
-  [M, payments, waivers] = await Promise.all([store.getMember(sess.uid), store.listPayments(sess.uid), store.listWaivers(sess.uid)]);
-  if (!M) { app.innerHTML = '<div class="panel empty">Member record not found.</div>'; return; }
+  M = await store.getMember(sess.uid);
+  if (!M) {
+    // Step 2 — the full membership form lives here, behind the login
+    renderProfileForm(app, store, sess, (m) => { welcome(m); load(); });
+    app.insertAdjacentHTML('beforeend', passwordPanel());
+    wirePasswordPanel();
+    return;
+  }
+  [payments, waivers] = await Promise.all([store.listPayments(sess.uid), store.listWaivers(sess.uid)]);
   L = buildLedger(M, payments, waivers);
   ST = cardStatus({ ...M, paidThrough: L.paidThrough });
   render();
+}
+
+function welcome(m) {
+  const { el } = modal(`
+    <h3>🎉 Welcome, ${esc(m.firstName)}!</h3>
+    <p class="sub" style="margin-top:-6px">Your membership number is <b class="mono">${esc(m.memberNo)}</b>. Valid until ${new Date(m.expiryMs).toLocaleDateString('en-GB')}.</p>
+    <div id="newCard"></div>${downloadButtons()}
+    <button class="btn btn-primary btn-block" data-close style="margin-top:14px">Go to my dashboard</button>`, { wide: true });
+  const data = cardData(m);
+  mountCard(el.querySelector('#newCard'), data);
+  wireDownloads(el, () => data);
 }
 
 function render() {
@@ -57,6 +77,7 @@ function render() {
             <dt>Member no.</dt><dd class="mono">${esc(M.memberNo)}</dd>
             <dt>Full name</dt><dd>${esc(M.fullName)}</dd>
             <dt>Date of birth</dt><dd>${fmtDate(M.dob)} (${esc(M.dobBS || '')} BS)</dd>
+            <dt>Blood group</dt><dd>${esc(M.bloodGroup || '—')}</dd>
             <dt>Profession</dt><dd>${esc(M.profession)}</dd>
             <dt>Mobile</dt><dd>${esc(M.phone)}</dd>
             ${M.email ? `<dt>E-mail</dt><dd>${esc(M.email)}</dd>` : ''}
@@ -65,6 +86,7 @@ function render() {
             <dt>Joined</dt><dd>${fmtDate(M.joinMs)}</dd>
           </dl>
         </div>
+        ${passwordPanel()}
       </div>
 
       <div>
@@ -102,59 +124,145 @@ function render() {
   app.querySelector('#payBtn').onclick = payDialog;
   app.querySelector('#waiveBtn').onclick = waiverDialog;
   app.querySelector('#renewBtn').onclick = doRenew;
+  app.querySelectorAll('[data-receipt]').forEach((b) => (b.onclick = async () => showReceipt(await store.getReceipt(b.dataset.receipt))));
+  wirePasswordPanel();
 }
 
 const addr = (a = {}) => esc([a.tole, a.municipality && `${a.municipality}-${a.ward}`, a.district, a.province].filter(Boolean).join(', '));
 
+// ---------- change password ----------
+function passwordPanel() {
+  return `<div class="panel" id="pwPanel">
+    <h3>🔒 Change password</h3>
+    <div class="grid">
+      <label class="f">Current password<input type="password" id="cpOld" autocomplete="current-password"></label>
+      <label class="f">New password<input type="password" id="cpNew" autocomplete="new-password"></label>
+      <label class="f">Confirm new password<input type="password" id="cpNew2" autocomplete="new-password"></label>
+      <div class="err" id="cpErr"></div>
+      <button class="btn btn-block" id="cpBtn">Change password</button>
+    </div></div>`;
+}
+function wirePasswordPanel() {
+  const p = app.querySelector('#pwPanel'); if (!p) return;
+  addEyeButtons(p);
+  const ux = attachPasswordUX(p.querySelector('#cpNew'), p.querySelector('#cpNew2'));
+  p.querySelector('#cpBtn').onclick = async () => {
+    const err = p.querySelector('#cpErr'); err.textContent = '';
+    const old = p.querySelector('#cpOld').value, nw = p.querySelector('#cpNew').value;
+    if (!old) { err.textContent = 'Enter your current password.'; return; }
+    if (nw.length < 6) { err.textContent = 'Password must be at least 6 characters.'; return; }
+    if (!ux.valid()) { err.textContent = 'Passwords do not match.'; return; }
+    try { await store.changePassword(old, nw); p.querySelector('#cpOld').value = ''; ux.reset(); toast('Password changed successfully.', 'success'); }
+    catch (e) { err.textContent = e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' ? 'Current password is wrong.' : friendlyError(e); }
+  };
+}
+
+// ---------- history ----------
 function history() {
   const items = [
     ...payments.map((p) => ({ ...p, kind: 'Payment' })),
     ...waivers.map((w) => ({ ...w, kind: 'Waiver' })),
   ].sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
   if (!items.length) return '<div class="empty">No payments or requests yet.</div>';
-  return `<div class="tbl-wrap"><table class="t"><thead><tr><th>Date</th><th>Type</th><th>Months</th><th>Amount</th><th>Status</th><th>Admin note</th></tr></thead><tbody>
+  const label = (x) => (x.kind === 'Payment' && x.status === 'approved' ? 'paid' : x.status);
+  return `<div class="tbl-wrap"><table class="t"><thead><tr><th>Date</th><th>Type</th><th>Months</th><th>Amount</th><th>Status</th><th>Receipt</th><th>Admin note</th></tr></thead><tbody>
     ${items.map((x) => `<tr class="${x.status === 'approved' ? 'row-green' : x.status === 'rejected' ? 'row-red' : ''}">
       <td>${fmtDate(x.createdAt)}</td><td>${x.kind}${x.method ? `<br><small class="hint">${esc(x.method)} ${esc(x.ref || '')}</small>` : ''}</td>
       <td>${x.months.map((m) => monthLabelShort(m)).join(', ')}</td>
       <td>${x.kind === 'Payment' ? npr(x.amount) : '—'}</td>
-      <td><span class="pill ${x.status}">${x.status}</span></td>
+      <td><span class="pill ${label(x) === 'paid' ? 'paid' : x.status}">${label(x)}</span></td>
+      <td>${x.hasReceipt ? `<button class="btn btn-sm btn-ghost" data-receipt="${esc(x.id)}">🧾 View</button>` : '—'}</td>
       <td>${esc(x.adminNote || x.adminReason || (x.kind === 'Waiver' ? 'Reason: ' + x.reason : ''))}</td></tr>`).join('')}
   </tbody></table></div>`;
 }
 const monthLabelShort = (k) => { const [y, m] = k.split('-'); return new Date(+y, +m - 1, 1).toLocaleDateString('en-GB', { month: 'short' }) + ' ' + y.slice(2); };
 
 function monthPicker(rows, preselect) {
-  return `<div class="months" style="padding:0;max-height:260px;overflow:auto">${rows.map((r) => `
+  return `<div class="months" style="padding:0;max-height:220px;overflow:auto">${rows.map((r) => `
     <label class="mo ${r.status}" style="cursor:pointer"><input type="checkbox" value="${r.month}" ${preselect.includes(r.status) ? 'checked' : ''} style="width:auto;margin-right:6px"><b style="display:inline">${r.label}</b><br><span>${STATUS_TEXT[r.status]}</span></label>`).join('')}</div>`;
 }
 
+// ---------- pay: QR + receipt upload ----------
 function payDialog() {
   const rows = L.rows.filter((r) => ['missed', 'due', 'upcoming'].includes(r.status));
   if (!rows.length) return toast('Nothing to pay — every month is paid, waived or awaiting verification.', 'success');
   const { el, close } = modal(`
     <h3>💳 Pay contribution</h3>
-    <p class="hint" style="margin-top:-8px">Select the months you are paying for. Overdue months are pre-selected. Your payment stays pending until an admin verifies it.</p>
+    <p class="pay-step"><span>1</span> Select the months you are paying for</p>
     ${monthPicker(rows, ['missed', 'due'])}
-    <div class="grid g2" style="margin-top:14px">
-      <label class="f">Payment method<select name="method">${PAYMENT_METHODS.map((m) => `<option value="${m}">${m}</option>`).join('')}</select></label>
-      <label class="f">Transaction / receipt no.<input name="ref" placeholder="e.g. eSewa txn ID"></label>
+    <div class="pay-total"><span>Amount to pay</span><b id="payTotal"></b></div>
+
+    <p class="pay-step"><span>2</span> Scan the QR code and pay this amount</p>
+    <div class="pay-qr">
+      <div class="pay-qr-box" id="payQr">${PAYMENT.qrImage ? `<img src="${esc(PAYMENT.qrImage)}" alt="Payment QR">` : ''}</div>
+      <div>
+        <b>${esc(PAYMENT.accountName)}</b>
+        <p class="hint" style="margin:4px 0 8px">${esc(PAYMENT.details)}</p>
+        ${PAYMENT.qrImage ? '' : '<span class="demo-tag">Online payment gateway is being set up. For now, pay the club directly and upload the receipt.</span>'}
+      </div>
     </div>
-    <label class="f" style="margin-top:10px">Note (optional)<input name="note"></label>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;gap:10px">
-      <b id="payTotal" style="font-size:18px"></b>
-      <button class="btn btn-green" id="paySubmit">Submit payment</button>
-    </div><div class="err" id="payErr"></div>`);
+
+    <p class="pay-step"><span>3</span> Upload your payment receipt</p>
+    <div class="grid g2">
+      <label class="f">Payment method<select name="method">${PAYMENT_METHODS.map((m) => `<option value="${m}">${m}</option>`).join('')}</select></label>
+      <label class="f">Transaction ID (optional)<input name="ref" placeholder="e.g. eSewa txn ID"></label>
+    </div>
+    <label class="receipt-drop" id="rcDrop">
+      <div class="rc-pv" id="rcPv">🧾</div>
+      <div><b>Upload receipt</b> <span class="req">*</span><br><span class="hint">Screenshot or photo (JPG/PNG) or a small PDF. The payment is completed only after the receipt is uploaded.</span></div>
+      <input type="file" id="rcFile" accept="image/png,image/jpeg,application/pdf">
+    </label>
+    <div class="err" id="payErr"></div>
+    <button class="btn btn-green btn-block" id="paySubmit" disabled>Upload receipt &amp; complete payment</button>`, { wide: true });
+
+  if (!PAYMENT.qrImage && window.QRCode) {
+    new window.QRCode(el.querySelector('#payQr'), { text: new URL('pay-soon.html', ORG.siteUrl || location.href).href, width: 150, height: 150, correctLevel: window.QRCode.CorrectLevel.M });
+  }
   const sel = () => [...el.querySelectorAll('input[type=checkbox]:checked')].map((c) => c.value);
-  const upd = () => (el.querySelector('#payTotal').textContent = `Total: ${npr(sel().length * M.pledge)}`);
-  el.addEventListener('change', upd); upd();
-  el.querySelector('#paySubmit').onclick = async () => {
-    const months = sel(); const method = el.querySelector('[name=method]').value; const ref = el.querySelector('[name=ref]').value.trim();
-    if (!months.length) return (el.querySelector('#payErr').textContent = 'Select at least one month.');
-    if (!ref && !method.startsWith('Cash')) return (el.querySelector('#payErr').textContent = 'Enter the transaction / receipt number.');
+  const upd = () => {
+    el.querySelector('#payTotal').textContent = npr(sel().length * M.pledge);
+    el.querySelector('#paySubmit').disabled = !receipt || !sel().length;
+  };
+  let receipt = null;
+  const fileIn = el.querySelector('#rcFile'), drop = el.querySelector('#rcDrop'), pv = el.querySelector('#rcPv');
+  const take = async (file) => {
+    if (!file) return;
+    el.querySelector('#payErr').textContent = '';
+    if (file.size > PAYMENT.maxReceiptMB * 1024 * 1024) { el.querySelector('#payErr').textContent = `Receipt must be smaller than ${PAYMENT.maxReceiptMB} MB.`; return; }
     try {
-      await store.createPayment({ uid: M.uid, memberNo: M.memberNo, name: M.fullName, months: months.sort(), amount: months.length * M.pledge, method, ref, note: el.querySelector('[name=note]').value.trim(), status: 'pending', createdAt: new Date().toISOString() });
-      close(); toast('Payment submitted — awaiting admin verification.', 'success'); load();
-    } catch (e) { el.querySelector('#payErr').textContent = friendlyError(e); }
+      receipt = await readReceipt(file);
+      pv.style.backgroundImage = receipt.type === 'image' ? `url(${receipt.data})` : '';
+      pv.textContent = receipt.type === 'pdf' ? '📄' : '';
+      drop.classList.add('has-file');
+      drop.querySelector('b').textContent = '✔ ' + file.name;
+    } catch (e) { receipt = null; el.querySelector('#payErr').textContent = e.message; }
+    upd();
+  };
+  fileIn.addEventListener('change', () => take(fileIn.files[0]));
+  ['dragover', 'dragenter'].forEach((e) => drop.addEventListener(e, (ev) => { ev.preventDefault(); drop.classList.add('drag'); }));
+  ['dragleave', 'drop'].forEach((e) => drop.addEventListener(e, () => drop.classList.remove('drag')));
+  drop.addEventListener('drop', (ev) => { ev.preventDefault(); take(ev.dataTransfer.files[0]); });
+  el.addEventListener('change', (e) => { if (e.target.type === 'checkbox') upd(); });
+  upd();
+
+  el.querySelector('#paySubmit').onclick = async () => {
+    const months = sel();
+    if (!months.length) return (el.querySelector('#payErr').textContent = 'Select at least one month.');
+    if (!receipt) return (el.querySelector('#payErr').textContent = 'Please upload your payment receipt.');
+    const btn = el.querySelector('#paySubmit'); btn.disabled = true; btn.textContent = 'Uploading…';
+    try {
+      const now = new Date().toISOString();
+      await store.createPayment({
+        uid: M.uid, memberNo: M.memberNo, name: M.fullName, months: months.sort(), amount: months.length * M.pledge,
+        method: el.querySelector('[name=method]').value, ref: el.querySelector('[name=ref]').value.trim(),
+        status: 'approved', reviewed: false, createdAt: now, paidAt: now,
+      }, receipt);
+      // keep the public QR card in sync with the new paid-through month
+      const fresh = buildLedger(M, await store.listPayments(M.uid), waivers);
+      await store.updateMember(M.uid, { paidThrough: fresh.paidThrough });
+      await store.updatePublicCard(M.cardToken, { paidThrough: fresh.paidThrough });
+      close(); toast('Payment completed ✔ Receipt uploaded.', 'success'); load();
+    } catch (e) { el.querySelector('#payErr').textContent = friendlyError(e); btn.disabled = false; btn.textContent = 'Upload receipt & complete payment'; }
   };
 }
 

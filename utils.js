@@ -148,6 +148,49 @@ export function compressImage(file, maxW = 420, maxH = 520, quality = 0.85) {
   });
 }
 
+/** Payment receipt -> { data, type, name }. Images are shrunk; PDFs must be small (database limit). */
+export function readReceipt(file) {
+  return new Promise((res, rej) => {
+    const isImg = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'].includes(file.type);
+    const isPdf = file.type === 'application/pdf';
+    if (!isImg && !isPdf) return rej(new Error('Receipt must be a photo/screenshot (JPG, PNG) or a PDF.'));
+    if (isPdf && file.size > 600 * 1024) return rej(new Error('PDF receipt is too large (max 600 KB). Please upload a screenshot or photo instead.'));
+    const fr = new FileReader();
+    fr.onerror = () => rej(new Error('Could not read that file'));
+    fr.onload = () => {
+      if (isPdf) return res({ data: fr.result, type: 'pdf', name: file.name });
+      const img = new Image();
+      img.onerror = () => rej(new Error('Could not read that file'));
+      img.onload = () => {
+        const s = Math.min(1, 1400 / Math.max(img.width, img.height));
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+        const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        res({ data: c.toDataURL('image/jpeg', 0.8), type: 'image', name: file.name });
+      };
+      img.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+
+/** Open a receipt (from store.getReceipt) in a viewer modal */
+export function showReceipt(r) {
+  if (!r) return toast('Receipt not found', 'error');
+  let pdfUrl = '';
+  if (r.type === 'pdf') {
+    const bin = atob(r.data.split(',')[1]);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    pdfUrl = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+  }
+  modal(`<h3>🧾 Payment receipt</h3>${r.type === 'pdf'
+    ? `<iframe src="${pdfUrl}" style="width:100%;height:70vh;border:1px solid var(--line);border-radius:10px"></iframe>`
+    : `<img src="${r.data}" alt="Receipt" style="width:100%;border-radius:10px;border:1px solid var(--line)">`}
+    <div class="dl-row"><a class="btn btn-sm btn-ghost" href="${r.data}" download="${esc(r.name || 'receipt')}">⬇ Download receipt</a></div>`, { wide: true });
+}
+
 // ---------- UI helpers ----------
 export function toast(msg, type = 'info') {
   let box = document.getElementById('toasts');

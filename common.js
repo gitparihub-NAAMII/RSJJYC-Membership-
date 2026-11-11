@@ -58,7 +58,7 @@ export async function initPage() {
 
 /** Fields needed to draw a card, from a member doc */
 export const cardData = (m, paidThrough) => ({
-  fullName: m.fullName, memberNo: m.memberNo, memberType: m.memberType, photo: m.photo, dob: m.dob,
+  fullName: m.fullName, memberNo: m.memberNo, memberType: m.memberType, photo: m.photo, dob: m.dob, bloodGroup: m.bloodGroup || '',
   joinMs: m.joinMs, expiryMs: m.expiryMs, periods: m.periods, cardToken: m.cardToken,
   paidThrough: paidThrough !== undefined ? paidThrough : m.paidThrough ?? null,
 });

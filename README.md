@@ -2,9 +2,12 @@
 
 A static website (HTML + CSS + JavaScript) backed by **Firebase Authentication + Cloud Firestore**. It covers:
 
-- **New member registration**: full name, date of birth (English AD or Nepali BS calendar) with automatic age, profession, permanent and temporary address, photo upload, login details and a monthly contribution.
+- **Two-step registration**: on the public page a person only creates a login (mobile number or any e-mail, incl. Gmail) and password — with a live strength bar, live "passwords match" check and 👁 show/hide. The full membership form opens inside their member dashboard after login. One membership per mobile number and per e-mail is enforced.
+- **Membership form** (inside the dashboard): full name, date of birth (English AD or Nepali BS calendar) with automatic age, profession, permanent and temporary address, blood group, photo upload and a monthly contribution.
 - **Digital membership card**: download it as PNG, JPG or PDF, or print it on A4 with cut marks. The card shows the photo, membership number, member type (General Member / BOD / …), validity dates and a unique QR code.
 - **QR verification page** (`verify.html`): shows only the card and its live status (Active / About to expire / Expired). An expired card shows a blinking red "Your card is expired – renew soon" banner. It never shows any fee details.
+- **Payments**: members pick the months, scan the payment QR (a demo QR until you set `PAYMENT.qrImage` in `config.js`) and must upload a receipt (photo, screenshot or small PDF). The payment counts as paid the moment the receipt is uploaded; admins check receipts and can reject fake ones.
+- **Passwords**: "Forgot password?" e-mails a reset link to e-mail users (mobile-number users must ask the admin); "Change password" is in the member dashboard.
 - **Member dashboard**: days left until expiry, total contributed, outstanding dues, and a month-by-month record (green = paid, red = missed, amber = due, blue = waiting for admin, grey = waived). Members can pay a contribution, ask for a waiver, and renew once their dues are cleared.
 - **English / नेपाली switch** and **dark / light theme switch** in the top bar of every page. The choice is remembered. Translations live in `i18n.js` (the `NE` dictionary); the printed membership card always stays in English.
 - **Admin dashboard**: totals, new / expiring / expired members, interactive charts (Chart.js), filters (by date, status or type), CSV export, and approve/reject for payments and waivers. Every decision needs a reason.
@@ -36,7 +39,7 @@ powershell -ExecutionPolicy Bypass -File serve.ps1
 
 Then open http://localhost:5500. (Any static server works, e.g. VS Code Live Server. Opening the file directly with `file://` does **not** work, because the site uses JavaScript modules.)
 
-Demo admin login: username `RSJJYC026`, password as agreed.
+Demo admin login: username `RSJJYCADMIN`, password kept privately by the club.
 
 ## 2. Connect Firebase
 
@@ -45,9 +48,9 @@ Demo admin login: username `RSJJYC026`, password as agreed.
 3. **Build → Firestore Database → Create database** (production mode, region `asia-south1` is closest to Nepal).
 4. **Project settings → General → Your apps → Web (</>)**: register the app and copy the `firebaseConfig` into `firebase-config.js`.
 5. Create the admin account:
-   - Authentication → Users → **Add user** → e-mail `rsjjyc026@admin.rsjjyc.app` (the `ADMIN.email` in `config.js`), with the admin password.
+   - Authentication → Users → **Add user** → e-mail `rsjjycadmin@admin.rsjjyc.app` (the `ADMIN.email` in `config.js`), with the admin password.
    - Copy that user's **UID**. In Firestore, create the collection `admins`, add a document whose **ID is that UID**, and give it the field `role: "admin"`.
-   - The admin then logs in on the site with username `RSJJYC026` and that password.
+   - The admin then logs in on the site with username `RSJJYCADMIN` and that password.
 6. Deploy the security rules (the `firestore.rules` file):
    ```bash
    npm install -g firebase-tools

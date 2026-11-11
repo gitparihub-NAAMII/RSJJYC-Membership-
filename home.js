@@ -1,9 +1,9 @@
-import { PROFESSIONS, DONATION_TIERS, PROVINCES, RULES, MEMBER_TYPES, ORG } from './config.js';
+import { MEMBER_TYPES, ORG } from './config.js';
 import { friendlyError } from './store.js';
-import { initPage, cardData } from './common.js';
-import { createDobPicker } from './datepicker.js';
-import { mountCard, downloadButtons, wireDownloads } from './card.js';
-import { ageOn, addYears, monthKey, uid, compressImage, esc, npr, toast, modal } from './utils.js';
+import { initPage } from './common.js';
+import { mountCard } from './card.js';
+import { addEyeButtons, attachPasswordUX } from './password.js';
+import { addYears, monthKey, esc, modal, toast, normalizeUsername } from './utils.js';
 
 const store = await initPage();
 const $ = (s, r = document) => r.querySelector(s);
@@ -15,8 +15,8 @@ if (sess) { const b = $('#continueBtn'); b.hidden = false; b.href = sess.role ==
 // ---------- hero sample card ----------
 const now = new Date();
 mountCard($('#heroCard'), {
-  fullName: 'Pradip Chaudhary', memberNo: `0${String(now.getFullYear()).slice(-2)}-RSJJYC-001-PC`, memberType: MEMBER_TYPES[0],
-  photo: '', dob: '1998-04-12', joinMs: now.getTime(), expiryMs: addYears(now.getTime()), periods: [{ start: monthKey(now), months: 12 }],
+  fullName: 'Member Name', memberNo: `0${String(now.getFullYear()).slice(-2)}-RSJJYC-001-MN`, memberType: MEMBER_TYPES[0],
+  photo: '', dob: '2000-01-01', bloodGroup: 'O+', joinMs: now.getTime(), expiryMs: addYears(now.getTime()), periods: [{ start: monthKey(now), months: 12 }],
   paidThrough: monthKey(now), cardToken: 'sample',
 });
 
@@ -51,174 +51,38 @@ setInterval(() => {
   setTimeout(() => { hookI = (hookI + 1) % HOOKS.length; hookEl.textContent = HOOKS[hookI]; hookEl.classList.remove('out'); }, 450);
 }, 4200);
 
-// ---------- registration form ----------
-const form = $('#regForm');
-const F = (n) => form.elements[n];
+// ---------- password fields ----------
+addEyeButtons(document);
+attachPasswordUX($('#regPw'), $('#regPw2'));
 
-// professions
-$('#profession').innerHTML = '<option value="">Select profession</option>' + PROFESSIONS.map((p) => `<option value="${esc(p.label)}">${esc(p.label)}</option>`).join('');
-
-// address blocks
-function addrBlock(kind) {
-  const el = form.querySelector(`[data-addr=${kind}]`);
-  el.innerHTML = `
-    <label class="f">Province <span class="req">*</span><select name="${kind}Province" required><option value="">Select province</option>${Object.keys(PROVINCES).map((p) => `<option value="${p}">${p}</option>`).join('')}</select></label>
-    <label class="f">District <span class="req">*</span><select name="${kind}District" required disabled><option value="">Select district</option></select></label>
-    <label class="f">Municipality / Rural Mun. <span class="req">*</span><input name="${kind}Municipality" required placeholder="e.g. Kathmandu Metropolitan City"></label>
-    <label class="f">Ward no. <span class="req">*</span><input name="${kind}Ward" type="number" min="1" max="35" required></label>
-    <label class="f" style="grid-column:1/-1">Tole / Street<input name="${kind}Tole" placeholder="e.g. Baneshwor, House no."></label>`;
-  const prov = F(kind + 'Province'), dist = F(kind + 'District');
-  prov.addEventListener('change', () => {
-    dist.innerHTML = '<option value="">Select district</option>' + (PROVINCES[prov.value] || []).map((d) => `<option value="${d}">${d}</option>`).join('');
-    dist.disabled = !prov.value;
-  });
-}
-addrBlock('permanent'); addrBlock('temporary');
-const ADDR = ['Province', 'District', 'Municipality', 'Ward', 'Tole'];
-const readAddr = (k) => Object.fromEntries(ADDR.map((f) => [f.toLowerCase(), F(k + f).value.trim()]));
-function copyAddr() {
-  ADDR.forEach((f) => {
-    const t = F('temporary' + f);
-    if (f === 'Province') { t.value = F('permanentProvince').value; t.dispatchEvent(new Event('change')); } else t.value = F('permanent' + f).value;
-  });
-}
-$('#sameAddr').addEventListener('change', (e) => {
-  const block = form.querySelector('[data-addr=temporary]');
-  if (e.target.checked) copyAddr();
-  block.querySelectorAll('input,select').forEach((x) => (x.disabled = e.target.checked || (x.name.endsWith('District') && !F('temporaryProvince').value)));
-  block.style.opacity = e.target.checked ? .55 : 1;
+// ---------- step 1: create account (username + password only) ----------
+const usernameError = (raw) => {
+  const v = raw.trim();
+  if (!v) return 'Enter your mobile number or e-mail.';
+  if (v.includes('@')) return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v) ? '' : 'Enter a valid e-mail address.';
+  return /^9\d{9}$/.test(normalizeUsername(v)) ? '' : 'Enter a valid 10-digit Nepali mobile number (98XXXXXXXX).';
+};
+$('#regUser').addEventListener('blur', () => {
+  const e = usernameError($('#regUser').value);
+  $('#regUser').classList.toggle('bad', !!e && !!$('#regUser').value);
 });
-form.querySelector('[data-addr=permanent]').addEventListener('input', () => { if ($('#sameAddr').checked) copyAddr(); });
-form.querySelector('[data-addr=permanent]').addEventListener('change', () => { if ($('#sameAddr').checked) setTimeout(copyAddr); });
-
-// DOB + age
-let dob = { ad: '' };
-createDobPicker($('#dobPicker'), (v) => {
-  dob = v;
-  const box = $('#ageBox');
-  if (!v.ad) { box.innerHTML = '<small>Select your date of birth</small>'; return; }
-  const a = ageOn(v.ad, new Date());
-  box.innerHTML = `${a.years} years ${a.months} months <small>· as of ${new Date().toLocaleDateString('en-GB')}</small>`;
-});
-
-// profession -> tiers
-const profObj = () => PROFESSIONS.find((p) => p.label === F('profession').value);
-F('profession').addEventListener('change', () => {
-  const p = profObj();
-  $('#otherProfWrap').hidden = F('profession').value !== 'Other';
-  const tiers = p ? (p.employed ? DONATION_TIERS.employed : DONATION_TIERS.notEmployed) : [];
-  $('#tierHint').textContent = p
-    ? (p.employed ? 'As a working professional, choose your monthly donation:' : 'As a student / not currently employed, choose any monthly donation that suits you:')
-    : 'Choose your profession first to see the contribution options.';
-  $('#tiers').innerHTML = tiers.map((t, i) => `<label><input type="radio" name="pledge" value="${t}" ${i === 0 ? 'checked' : ''}><span>${npr(t)}<small>per month · ${npr(t * 12)}/yr</small></span></label>`).join('');
-});
-
-// photo
-let photoData = '';
-const photoIn = $('#photo'), drop = $('#photoDrop');
-async function takePhoto(file) {
-  if (!file) return;
-  if (!['image/png', 'image/jpeg'].includes(file.type)) return toast('Photo must be PNG or JPG', 'error');
-  if (file.size > RULES.maxPhotoMB * 1024 * 1024) return toast(`Photo must be smaller than ${RULES.maxPhotoMB} MB`, 'error');
-  try {
-    photoData = await compressImage(file);
-    $('#photoPv').style.backgroundImage = `url(${photoData})`; $('#photoPv').textContent = '';
-  } catch { toast('Could not read that image', 'error'); }
-}
-photoIn.addEventListener('change', () => takePhoto(photoIn.files[0]));
-['dragover', 'dragenter'].forEach((e) => drop.addEventListener(e, (ev) => { ev.preventDefault(); drop.classList.add('drag'); }));
-['dragleave', 'drop'].forEach((e) => drop.addEventListener(e, () => drop.classList.remove('drag')));
-drop.addEventListener('drop', (ev) => { ev.preventDefault(); takePhoto(ev.dataTransfer.files[0]); });
-
-// username preview + password meter
-const username = () => (form.elements.userType.value === 'email' ? F('email').value.trim().toLowerCase() : F('phone').value.replace(/[^\d]/g, ''));
-const refreshUser = () => ($('#usernamePreview').value = username());
-['phone', 'email'].forEach((n) => F(n).addEventListener('input', refreshUser));
-form.querySelectorAll('input[name=userType]').forEach((r) => r.addEventListener('change', refreshUser));
-F('password').addEventListener('input', () => {
-  const v = F('password').value;
-  const s = [v.length >= 8, /[A-Z]/.test(v), /[a-z]/.test(v), /\d/.test(v), /[^\w]/.test(v)].filter(Boolean).length;
-  const bar = $('#pwBar');
-  bar.style.width = (s / 5) * 100 + '%';
-  bar.style.background = s <= 2 ? 'var(--red)' : s <= 3 ? 'var(--amber)' : 'var(--green)';
-});
-
-// submit
-form.addEventListener('submit', async (e) => {
+$('#regForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const err = $('#regErr'); err.textContent = '';
-  form.querySelectorAll('.bad').forEach((x) => x.classList.remove('bad'));
-  const bad = (el, msg) => { if (el) { el.classList.add('bad'); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } err.textContent = msg; return false; };
-
-  // required fields
-  for (const el of form.querySelectorAll('[required]')) {
-    if (el.disabled || el.type === 'checkbox') continue;
-    if (!el.value.trim()) return bad(el, 'Please fill in all required fields.');
-  }
-  if (!dob.ad) return bad($('#dobPicker input:not([hidden])'), 'Please select your date of birth.');
-  const phone = F('phone').value.replace(/[^\d]/g, '');
-  if (!/^9\d{9}$/.test(phone)) return bad(F('phone'), 'Enter a valid 10-digit Nepali mobile number (98XXXXXXXX).');
-  const email = F('email').value.trim().toLowerCase();
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return bad(F('email'), 'Enter a valid e-mail address.');
-  if (form.elements.userType.value === 'email' && !email) return bad(F('email'), 'Enter your e-mail to use it as your username.');
-  if (F('profession').value === 'Other' && !F('professionOther').value.trim()) return bad(F('professionOther'), 'Please specify your profession.');
-  if (!photoData) return bad(drop, 'Please upload your photo.');
-  if (F('password').value.length < 6) return bad(F('password'), 'Password must be at least 6 characters.');
-  if (F('password').value !== F('password2').value) return bad(F('password2'), 'Passwords do not match.');
-  const pledgeEl = form.querySelector('input[name=pledge]:checked');
-  if (!pledgeEl) return bad($('#tiers'), 'Please choose a monthly contribution.');
-  if (!$('#agree').checked) return bad($('#agree'), 'Please confirm the declaration.');
-
-  const applied = new Date();
-  const first = F('firstName').value.trim(), middle = F('middleName').value.trim(), last = F('lastName').value.trim();
-  const prof = profObj();
-  const member = {
-    firstName: first, middleName: middle, lastName: last,
-    fullName: [first, middle, last].filter(Boolean).join(' '),
-    dob: dob.ad, dobBS: dob.bs, dobCalendar: dob.calendar,
-    ageAtApplication: ageOn(dob.ad, applied).years,
-    gender: F('gender').value,
-    phone, email, username: username(),
-    profession: F('profession').value === 'Other' ? `Other: ${F('professionOther').value.trim()}` : F('profession').value,
-    employed: !!prof?.employed,
-    pledge: Number(pledgeEl.value),
-    permanentAddress: readAddr('permanent'),
-    temporaryAddress: readAddr('temporary'),
-    photo: photoData,
-    memberType: MEMBER_TYPES[0],
-    joinYear: applied.getFullYear(),
-    joinMs: applied.getTime(),
-    expiryMs: addYears(applied.getTime(), 1),
-    periods: [{ start: monthKey(applied), months: RULES.membershipMonths }],
-    renewals: [],
-    paidThrough: null,
-    cardToken: uid(24),
-    createdAt: applied.toISOString(),
-  };
-  const pub = cardData(member, null);
-  delete pub.cardToken;
-
-  const btn = $('#regBtn'); btn.disabled = true; btn.textContent = 'Creating your membership…';
+  const u = $('#regUser').value;
+  const ue = usernameError(u);
+  if (ue) { $('#regUser').classList.add('bad'); err.textContent = ue; return; }
+  if ($('#regPw').value.length < 6) { err.textContent = 'Password must be at least 6 characters.'; return; }
+  if ($('#regPw').value !== $('#regPw2').value) { err.textContent = 'Passwords do not match.'; return; }
+  const btn = $('#regBtn'); btn.disabled = true; btn.textContent = 'Creating your account…';
   try {
-    const saved = await store.registerMember(member, member.username, F('password').value, pub);
-    showSuccess(saved);
+    await store.createAccount(u, $('#regPw').value);
+    location.href = 'member.html';
   } catch (ex) {
     err.textContent = friendlyError(ex);
-  } finally { btn.disabled = false; btn.textContent = 'Register & generate my membership card'; }
+    btn.disabled = false; btn.textContent = 'Create my account';
+  }
 });
-
-function showSuccess(m) {
-  const { el } = modal(`
-    <h3>🎉 Welcome, ${esc(m.firstName)}!</h3>
-    <p class="sub" style="margin-top:-6px">Your membership number is <b class="mono">${esc(m.memberNo)}</b>. Valid until ${new Date(m.expiryMs).toLocaleDateString('en-GB')}.</p>
-    <div id="newCard"></div>${downloadButtons()}
-    <p class="hint" style="margin-top:14px">Log in any time with username <b>${esc(m.username)}</b> to see your contributions, pay dues and renew.</p>
-    <a class="btn btn-primary btn-block" href="member.html" style="margin-top:8px">Go to my dashboard →</a>`, { wide: true });
-  const data = cardData(m);
-  mountCard(el.querySelector('#newCard'), data);
-  wireDownloads(el, () => data);
-  form.reset(); photoData = ''; $('#photoPv').style.backgroundImage = ''; $('#photoPv').textContent = '📷';
-}
 
 // ---------- member login ----------
 $('#loginForm').addEventListener('submit', async (e) => {
@@ -228,6 +92,45 @@ $('#loginForm').addEventListener('submit', async (e) => {
     const s = await store.loginMember(f.username.value, f.password.value);
     location.href = s.role === 'admin' ? 'admin.html' : 'member.html';
   } catch (ex) { $('#loginErr').textContent = friendlyError(ex); }
+});
+
+// ---------- forgot password ----------
+$('#forgotLink').addEventListener('click', (e) => {
+  e.preventDefault();
+  const { el, close } = modal(`
+    <h3>🔑 Reset your password</h3>
+    <p class="hint" style="margin-top:-6px">Enter the e-mail or mobile number you use to log in.</p>
+    <label class="f">Username (mobile or e-mail)<input id="fpUser" value="${esc($('#loginForm').username.value)}"></label>
+    <div id="fpDemo" hidden style="margin-top:12px">
+      <p class="hint">Demo mode: set a new password here (on the live site a reset link is e-mailed instead).</p>
+      <label class="f">New password<input type="password" id="fpPw"></label>
+      <label class="f" style="margin-top:10px">Confirm new password<input type="password" id="fpPw2"></label>
+    </div>
+    <div class="err" id="fpErr" style="margin-top:8px"></div>
+    <p class="ok-msg" id="fpOk" hidden></p>
+    <button class="btn btn-primary btn-block" id="fpBtn">Send reset link</button>`);
+  const err = el.querySelector('#fpErr'), ok = el.querySelector('#fpOk'), btn = el.querySelector('#fpBtn');
+  let demoReady = false, ux;
+  btn.onclick = async () => {
+    err.textContent = '';
+    const u = el.querySelector('#fpUser').value;
+    const ue = usernameError(u); if (ue) { err.textContent = ue; return; }
+    try {
+      if (demoReady) {
+        if (!ux.valid()) { err.textContent = 'Passwords do not match.'; return; }
+        await store.demoSetPassword(u, el.querySelector('#fpPw').value);
+        close(); toast('Password changed. You can log in now.', 'success'); return;
+      }
+      const r = await store.resetPassword(u);
+      if (r === 'demo') {
+        demoReady = true; el.querySelector('#fpDemo').hidden = false; btn.textContent = 'Save new password';
+        addEyeButtons(el); ux = attachPasswordUX(el.querySelector('#fpPw'), el.querySelector('#fpPw2'));
+      } else {
+        ok.hidden = false; ok.textContent = '✔ Reset link sent. Check your e-mail inbox (and the spam folder), open the link and choose a new password.';
+        btn.hidden = true;
+      }
+    } catch (ex) { err.textContent = friendlyError(ex); }
+  };
 });
 
 // ---------- admin login ----------

@@ -1,18 +1,27 @@
 rules_version = '2';
 // Firestore security rules for the RSJJYC membership platform.
-// Deploy with:  firebase deploy --only firestore:rules
+// Paste into Firebase console -> Firestore Database -> Rules -> Publish.
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
     function isAdmin() { return signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
     function onlyKeys(keys) { return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys); }
     // a renewal may push expiry at most ~14 months ahead of today
-    function renewalOk() { return request.resource.data.expiryMs <= request.time.toMillis() + 430 * 86400000; }
+    function renewalOk() { return !('expiryMs' in request.resource.data) || request.resource.data.expiryMs <= request.time.toMillis() + 430 * 86400000; }
 
     // admins/{uid} documents are created by hand in the Firebase console
     match /admins/{uid} {
       allow read: if signedIn() && request.auth.uid == uid;
       allow write: if false;
+    }
+
+    // One person = one membership: each phone / e-mail can be claimed only once.
+    // (An existing key can never be overwritten by a member, only by an admin.)
+    match /uniques/{key} {
+      allow get: if signedIn();
+      allow list: if isAdmin();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if isAdmin();
     }
 
     // membership-number sequence per year (can only ever go up by one)
@@ -29,7 +38,7 @@ service cloud.firestore {
         && request.resource.data.memberType == 'General Member'
         && request.resource.data.paidThrough == null;
       allow update: if isAdmin()
-        || (signedIn() && request.auth.uid == uid && onlyKeys(['expiryMs', 'periods', 'renewals']) && renewalOk());
+        || (signedIn() && request.auth.uid == uid && onlyKeys(['expiryMs', 'periods', 'renewals', 'paidThrough']) && renewalOk());
       allow delete: if isAdmin();
     }
 
@@ -41,13 +50,24 @@ service cloud.firestore {
         && request.resource.data.memberType == 'General Member'
         && request.resource.data.paidThrough == null;
       allow update: if isAdmin()
-        || (signedIn() && resource.data.uid == request.auth.uid && onlyKeys(['expiryMs', 'periods']) && renewalOk());
+        || (signedIn() && resource.data.uid == request.auth.uid && onlyKeys(['expiryMs', 'periods', 'paidThrough']) && renewalOk());
       allow delete: if isAdmin();
     }
 
+    // A payment counts as paid only when a receipt is uploaded in the same write.
     match /payments/{id} {
       allow read: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());
-      allow create: if signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.status == 'pending';
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid
+        && (request.resource.data.status == 'pending'
+            || (request.resource.data.status == 'approved'
+                && request.resource.data.reviewed == false
+                && existsAfter(/databases/$(database)/documents/receipts/$(id))));
+      allow update, delete: if isAdmin();
+    }
+
+    match /receipts/{id} {
+      allow read: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
       allow update, delete: if isAdmin();
     }
 

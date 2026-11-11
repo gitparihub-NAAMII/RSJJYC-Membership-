@@ -27,7 +27,7 @@ export function renderCard(data, { showStatus = true } = {}) {
     <div class="mc-body">
       <div class="mc-photo">${data.photo ? `<img src="${data.photo}" alt="">` : ''}</div>
       <div class="mc-info">
-        <div class="mc-type">${esc((data.memberType || 'General Member').toUpperCase())}</div>
+        <div class="mc-badges"><span class="mc-type">${esc((data.memberType || 'General Member').toUpperCase())}</span>${data.bloodGroup && data.bloodGroup !== "Don't know" ? `<span class="mc-blood">BLOOD <b>${esc(data.bloodGroup)}</b></span>` : ''}</div>
         <div class="mc-name">${esc((data.fullName || '').toUpperCase())}</div>
         <div class="mc-grid">
           <div><span>MEMBER NO.</span><b class="mono">${esc(data.memberNo || '—')}</b></div>

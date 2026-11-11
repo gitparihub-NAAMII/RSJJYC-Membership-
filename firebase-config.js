@@ -14,4 +14,7 @@ export const firebaseConfig = {
   appId: '1:362063681421:web:e7f6f096a5534c02348fc4',
 };
 
-export const FIREBASE_ENABLED = !firebaseConfig.apiKey.startsWith('PASTE_');
+// For testing only: localStorage.setItem('forceDemo','1') in a browser makes
+// that browser use local demo data instead of the real database.
+const forceDemo = (() => { try { return localStorage.getItem('forceDemo') === '1'; } catch { return false; } })();
+export const FIREBASE_ENABLED = !firebaseConfig.apiKey.startsWith('PASTE_') && !forceDemo;

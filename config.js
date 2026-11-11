@@ -21,9 +21,9 @@ export const ORG = {
 // Admin login. In Firebase mode the password lives ONLY in Firebase Auth
 // (see README). In demo mode the password is checked against this SHA-256 hash.
 export const ADMIN = {
-  username: 'RSJJYC026',
-  email: 'rsjjyc026@admin.rsjjyc.app',
-  demoPasswordSha256: 'f65320796a3a59ec1168297395e73861ad9fae03f94f5511a036ef0a15386a92',
+  username: 'RSJJYCADMIN',
+  email: 'rsjjycadmin@admin.rsjjyc.app',
+  demoPasswordSha256: '8f9c17b65f9542483becfaf411953b8dc613be4f33b99291c9c893fd5ebd6cc4',
 };
 
 // Synthetic e-mail domain used when a member chooses a phone number as username
@@ -78,6 +78,19 @@ export const PROVINCES = {
 };
 
 export const PAYMENT_METHODS = ['eSewa', 'Khalti', 'Fonepay / Mobile Banking', 'Bank Deposit', 'Cash to Treasurer'];
+
+export const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', "Don't know"];
+
+// Where members send their monthly contribution.
+// DEMO values for now: replace with the club's real details. To show your real
+// eSewa / Khalti / Fonepay / bank QR, save the QR image in this folder
+// (e.g. payment-qr.png) and set qrImage: 'payment-qr.png'.
+export const PAYMENT = {
+  qrImage: '',                       // empty = show a DEMO QR code
+  accountName: 'Royal Star Jan Jyoti Youth Club (DEMO)',
+  details: 'eSewa / Khalti ID: 98XXXXXXXX (demo) · Bank: Demo Bank Ltd, A/C 0000000000',
+  maxReceiptMB: 5,
+};
 
 export const RULES = {
   membershipMonths: 12,          // card validity

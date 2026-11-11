@@ -3,7 +3,8 @@ import { friendlyError } from './store.js';
 import { initPage, cardData } from './common.js';
 import { tr } from './i18n.js';
 import { mountCard, downloadButtons, wireDownloads } from './card.js';
-import { buildLedger, cardStatus, esc, npr, fmtDate, isoDate, modal, toast, monthKey, addMonths, monthLabel, STATUS_TEXT, DAY } from './utils.js';
+import { buildLedger, cardStatus, esc, npr, fmtDate, isoDate, modal, toast, monthKey, addMonths, monthLabel, STATUS_TEXT, DAY, showReceipt } from './utils.js';
+const needsReview = (p) => p.status === 'pending' || (p.status === 'approved' && p.reviewed === false);
 
 const store = await initPage();
 const sess = await store.session();
@@ -19,7 +20,7 @@ async function load() {
   [members, payments, waivers] = await Promise.all([store.listMembers(), store.listPayments(), store.listWaivers()]);
   members.forEach(enrich);
   members.sort((a, b) => b.joinMs - a.joinMs);
-  const pend = payments.filter((p) => p.status === 'pending').length + waivers.filter((w) => w.status === 'pending').length;
+  const pend = payments.filter(needsReview).length + waivers.filter((w) => w.status === 'pending').length;
   const b = document.getElementById('apBadge'); b.hidden = !pend; b.textContent = pend;
   show(current);
 }
@@ -49,7 +50,7 @@ function overview() {
   const cnt = (c) => members.filter((m) => m._S.code === c).length;
   const owing = members.filter((m) => m._L.outstanding > 0);
   const dues = owing.reduce((a, m) => a + m._L.outstanding, 0);
-  const pend = payments.filter((p) => p.status === 'pending').length + waivers.filter((w) => w.status === 'pending').length;
+  const pend = payments.filter(needsReview).length + waivers.filter((w) => w.status === 'pending').length;
 
   view.innerHTML = `
     <div class="stats">
@@ -176,11 +177,16 @@ function memberModal(m) {
       <div><div id="mCard"></div>${downloadButtons()}
         <label class="f" style="margin-top:16px">Member type (shown on card)
           <div style="display:flex;gap:8px"><select id="mType">${MEMBER_TYPES.map((t) => `<option value="${t}" ${t === m.memberType ? 'selected' : ''}>${t}</option>`).join('')}</select><button class="btn btn-sm" id="mTypeSave">Save</button></div></label>
+        <div class="danger-zone">
+          <b>Danger zone</b>
+          <p class="hint">Permanently removes this membership: details, card, QR page, payments, receipts and waiver requests. Their mobile number and e-mail become free to register again.</p>
+          <button class="btn btn-red btn-sm" id="mDelete">🗑 Delete member</button>
+        </div>
       </div>
       <div>
         <dl class="kv">
           <dt>Member no.</dt><dd class="mono">${esc(m.memberNo)}</dd><dt>DOB</dt><dd>${fmtDate(m.dob)} · ${esc(m.dobBS || '')} BS · age ${m.ageAtApplication} at joining</dd>
-          <dt>Gender</dt><dd>${esc(m.gender || '—')}</dd><dt>Profession</dt><dd>${esc(m.profession)}</dd>
+          <dt>Gender</dt><dd>${esc(m.gender || '—')}</dd><dt>Blood group</dt><dd>${esc(m.bloodGroup || '—')}</dd><dt>Profession</dt><dd>${esc(m.profession)}</dd>
           <dt>Phone / e-mail</dt><dd>${esc(m.phone)} ${m.email ? '· ' + esc(m.email) : ''}</dd><dt>Username</dt><dd>${esc(m.username)}</dd>
           <dt>Permanent</dt><dd>${a(m.permanentAddress)}</dd><dt>Temporary</dt><dd>${a(m.temporaryAddress)}</dd>
           <dt>Joined / expires</dt><dd>${fmtDate(m.joinMs)} → ${fmtDate(m.expiryMs)} (${(m.renewals || []).length} renewal(s))</dd>
@@ -197,11 +203,38 @@ function memberModal(m) {
     try { await store.updateMember(m.uid, { memberType: t }); await store.updatePublicCard(m.cardToken, { memberType: t }); toast('Member type updated', 'success'); close(); load(); }
     catch (e) { toast(friendlyError(e), 'error'); }
   };
+  el.querySelector('#mDelete').onclick = () => { close(); confirmDelete(m); };
+}
+
+function confirmDelete(m) {
+  const nPay = payments.filter((p) => p.uid === m.uid).length, nW = waivers.filter((w) => w.uid === m.uid).length;
+  const { el, close } = modal(`
+    <h3>🗑 Delete this member?</h3>
+    <p><b>${esc(m.fullName)}</b> · <span class="mono">${esc(m.memberNo)}</span></p>
+    <ul class="hint" style="margin:6px 0 12px;padding-left:18px">
+      <li>Membership details, card and QR verification page</li>
+      <li>${nPay} payment(s) with receipts and ${nW} waiver request(s)</li>
+      <li>Frees mobile ${esc(m.phone)}${m.email ? ' and e-mail ' + esc(m.email) : ''} for a new registration</li>
+    </ul>
+    <p class="err" style="font-weight:600">This cannot be undone.</p>
+    <label class="f">Type the member number to confirm<input id="delConfirm" placeholder="${esc(m.memberNo)}" autocomplete="off"></label>
+    <p class="hint">The login account stays in Firebase (Authentication → Users). Delete it there too if you want to remove the login completely.</p>
+    <div class="actions" style="margin-top:12px">
+      <button class="btn btn-ghost" data-close>Cancel</button>
+      <button class="btn btn-red" id="delGo" disabled>Delete permanently</button>
+    </div>`);
+  const inp = el.querySelector('#delConfirm'), go = el.querySelector('#delGo');
+  inp.addEventListener('input', () => (go.disabled = inp.value.trim().toUpperCase() !== m.memberNo));
+  go.onclick = async () => {
+    go.disabled = true; go.textContent = 'Deleting…';
+    try { await store.deleteMember(m); close(); toast(`Member ${m.memberNo} deleted.`, 'success'); load(); }
+    catch (e) { toast(friendlyError(e), 'error'); go.disabled = false; go.textContent = 'Delete permanently'; }
+  };
 }
 
 function exportCsv(list) {
-  const cols = ['memberNo', 'fullName', 'memberType', 'phone', 'email', 'profession', 'dob', 'dobBS', 'pledge', 'joined', 'expires', 'status', 'paid', 'dues'];
-  const rows = list.map((m) => [m.memberNo, m.fullName, m.memberType, m.phone, m.email, m.profession, m.dob, m.dobBS, m.pledge, isoDate(m.joinMs), isoDate(m.expiryMs), m._S.label, m._L.paidTotal, m._L.outstanding]);
+  const cols = ['memberNo', 'fullName', 'memberType', 'phone', 'email', 'profession', 'dob', 'dobBS', 'bloodGroup', 'pledge', 'joined', 'expires', 'status', 'paid', 'dues'];
+  const rows = list.map((m) => [m.memberNo, m.fullName, m.memberType, m.phone, m.email, m.profession, m.dob, m.dobBS, m.bloodGroup, m.pledge, isoDate(m.joinMs), isoDate(m.expiryMs), m._S.label, m._L.paidTotal, m._L.outstanding]);
   const csv = [cols, ...rows].map((r) => r.map((v) => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' }));
@@ -211,7 +244,7 @@ function exportCsv(list) {
 // ============================ APPROVALS ============================
 function approvals() {
   const pw = waivers.filter((w) => w.status === 'pending').sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-  const pp = payments.filter((p) => p.status === 'pending').sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  const pp = payments.filter(needsReview).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   const done = [...waivers.filter((w) => w.status !== 'pending')].sort((a, b) => (b.reviewedAt || '').localeCompare(a.reviewedAt || ''));
   const months = (x) => x.months.map(monthLabel).join(', ');
   view.innerHTML = `
@@ -225,13 +258,15 @@ function approvals() {
           <div class="actions" style="margin-top:8px"><button class="btn btn-green btn-sm" data-act="approved">Approve</button><button class="btn btn-red btn-sm" data-act="rejected">Reject</button></div>
         </div>`).join('') : '<div class="empty">🎉 No pending waiver requests</div>'}
       </div>
-      <div class="panel"><h3>💳 Payments awaiting verification (${pp.length})</h3>
+      <div class="panel"><h3>🧾 New payments — check receipts (${pp.length})</h3>
+        <p class="hint" style="margin-top:-6px">Payments count as paid as soon as the member uploads a receipt. Check each receipt; reject it if it is fake or wrong.</p>
         ${pp.length ? pp.map((p) => `<div class="req-card" data-kind="payment" data-id="${p.id}">
           <div class="top"><b>${esc(p.name)} <span class="mono hint">${esc(p.memberNo)}</span></b><small class="hint">${fmtDate(p.createdAt)}</small></div>
           <p><b>${npr(p.amount)}</b> via ${esc(p.method)} · Ref: <span class="mono">${esc(p.ref || '—')}</span></p>
           <p><b>Months:</b> ${months(p)}${p.note ? ` · <i>${esc(p.note)}</i>` : ''}</p>
-          <label class="f">Admin note <span class="hint">(required to reject)</span><textarea rows="2"></textarea></label>
-          <div class="actions" style="margin-top:8px"><button class="btn btn-green btn-sm" data-act="approved">Verify &amp; approve</button><button class="btn btn-red btn-sm" data-act="rejected">Reject</button></div>
+          ${p.hasReceipt ? `<button class="btn btn-sm btn-ghost" data-receipt="${esc(p.id)}">🧾 View receipt</button>` : '<p class="err">No receipt uploaded</p>'}
+          <label class="f" style="margin-top:8px">Admin note <span class="hint">(required to reject)</span><textarea rows="2"></textarea></label>
+          <div class="actions" style="margin-top:8px"><button class="btn btn-green btn-sm" data-act="approved">Receipt OK ✔</button><button class="btn btn-red btn-sm" data-act="rejected">Reject receipt</button></div>
         </div>`).join('') : '<div class="empty">✔ No payments waiting</div>'}
       </div>
     </div>
@@ -241,12 +276,13 @@ function approvals() {
       </tbody></table></div>` : '<div class="empty">No decisions yet.</div>'}
     </div>`;
 
+  wireReceipts(view);
   view.querySelectorAll('.req-card [data-act]').forEach((btn) => btn.addEventListener('click', async () => {
     const card = btn.closest('.req-card'); const kind = card.dataset.kind; const id = card.dataset.id; const act = btn.dataset.act;
     const ta = card.querySelector('textarea'); const reason = ta.value.trim();
     if ((kind === 'waiver' || act === 'rejected') && reason.length < 5) { ta.classList.add('bad'); ta.focus(); return toast('Please write the reason for this decision.', 'error'); }
     const rec = (kind === 'waiver' ? waivers : payments).find((x) => x.id === id);
-    const patch = { status: act, reviewedAt: new Date().toISOString(), reviewedBy: sess.uid, ...(kind === 'waiver' ? { adminReason: reason } : { adminNote: reason }) };
+    const patch = { status: act, reviewedAt: new Date().toISOString(), reviewedBy: sess.uid, ...(kind === 'waiver' ? { adminReason: reason } : { adminNote: reason, reviewed: true }) };
     try {
       await (kind === 'waiver' ? store.updateWaiver(id, patch) : store.updatePayment(id, patch));
       Object.assign(rec, patch);
@@ -270,19 +306,26 @@ async function syncPublic(uid) {
 function paymentsView() {
   const list = [...payments].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const sum = (s) => list.filter((p) => p.status === s).reduce((a, p) => a + p.amount, 0);
+  const toCheck = list.filter(needsReview).reduce((a, p) => a + p.amount, 0);
   view.innerHTML = `
     <div class="stats">
-      <div class="stat green"><span>Verified</span><b>${npr(sum('approved'))}</b></div>
-      <div class="stat amber"><span>Awaiting verification</span><b>${npr(sum('pending'))}</b></div>
+      <div class="stat green"><span>Paid (receipt uploaded)</span><b>${npr(sum('approved'))}</b></div>
+      <div class="stat amber"><span>Receipts to check</span><b>${npr(toCheck)}</b></div>
       <div class="stat red"><span>Rejected</span><b>${npr(sum('rejected'))}</b></div>
     </div>
     <div class="panel"><h3>All payments</h3>
-      ${list.length ? `<div class="tbl-wrap"><table class="t"><thead><tr><th>Date</th><th>Member</th><th>Months</th><th>Amount</th><th>Method / ref</th><th>Status</th><th>Admin note</th></tr></thead><tbody>
+      ${list.length ? `<div class="tbl-wrap"><table class="t"><thead><tr><th>Date</th><th>Member</th><th>Months</th><th>Amount</th><th>Method / ref</th><th>Receipt</th><th>Status</th><th>Admin note</th></tr></thead><tbody>
       ${list.map((p) => `<tr class="${p.status === 'approved' ? 'row-green' : p.status === 'rejected' ? 'row-red' : 'row-amber'}"><td>${fmtDate(p.createdAt)}</td><td>${esc(p.name)}<br><small class="mono hint">${esc(p.memberNo)}</small></td>
         <td>${p.months.map(monthLabel).join(', ')}</td><td><b>${npr(p.amount)}</b></td><td>${esc(p.method)}<br><small class="mono hint">${esc(p.ref || '')}</small></td>
-        <td><span class="pill ${p.status}">${p.status}</span></td><td>${esc(p.adminNote || '')}</td></tr>`).join('')}
+        <td>${p.hasReceipt ? `<button class="btn btn-sm btn-ghost" data-receipt="${esc(p.id)}">🧾 View</button>` : '—'}</td>
+        <td><span class="pill ${p.status === 'approved' ? 'paid' : p.status}">${p.status === 'approved' ? 'paid' : p.status}</span>${needsReview(p) ? '<br><small class="hint">not checked yet</small>' : ''}</td><td>${esc(p.adminNote || '')}</td></tr>`).join('')}
       </tbody></table></div>` : '<div class="empty">No payments yet.</div>'}
     </div>`;
+  wireReceipts(view);
+}
+
+function wireReceipts(root) {
+  root.querySelectorAll('[data-receipt]').forEach((b) => (b.onclick = async () => showReceipt(await store.getReceipt(b.dataset.receipt))));
 }
 
 ['langchange', 'themechange'].forEach((ev) => window.addEventListener(ev, () => { if (members.length || current) show(current); }));
