@@ -89,7 +89,7 @@ export const PAYMENT = {
   qrImage: '',                       // empty = show a DEMO QR code
   accountName: 'Royal Star Jan Jyoti Youth Club (DEMO)',
   details: 'eSewa / Khalti ID: 98XXXXXXXX (demo) · Bank: Demo Bank Ltd, A/C 0000000000',
-  maxReceiptMB: 5,
+  maxReceiptMB: 10,
 };
 
 export const RULES = {
@@ -97,5 +97,5 @@ export const RULES = {
   expiringSoonDays: 30,          // "about to expire" window
   renewWindowDays: 60,           // renewal opens this many days before expiry
   suspendAfterMissedMonths: 3,   // card shows EXPIRED after this many unpaid past months
-  maxPhotoMB: 5,
+  maxPhotoMB: 10,
 };

@@ -148,13 +148,60 @@ export function compressImage(file, maxW = 420, maxH = 520, quality = 0.85) {
   });
 }
 
-/** Payment receipt -> { data, type, name }. Images are shrunk; PDFs must be small (database limit). */
+// PDF reader (loaded only when a large PDF receipt is chosen)
+const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+function loadPdfJs() {
+  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  return new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = PDFJS + 'pdf.min.js';
+    s.onload = () => {
+      const lib = window.pdfjsLib;
+      lib.GlobalWorkerOptions.workerSrc = PDFJS + 'pdf.worker.min.js';
+      // a worker from another site must be started through a same-site "blob" wrapper
+      try {
+        const url = URL.createObjectURL(new Blob([`importScripts('${PDFJS}pdf.worker.min.js');`], { type: 'application/javascript' }));
+        lib.GlobalWorkerOptions.workerPort = new Worker(url);
+      } catch { /* falls back to running inside the page */ }
+      res(lib);
+    };
+    s.onerror = () => rej(new Error('Could not open the PDF. Please check your internet connection or upload a screenshot instead.'));
+    document.head.appendChild(s);
+  });
+}
+/** Turn a (large) PDF into one JPEG image of its first pages, small enough for the database */
+async function pdfToImage(file) {
+  const lib = await loadPdfJs();
+  const pdf = await lib.getDocument({ data: await file.arrayBuffer() }).promise;
+  const pages = Math.min(pdf.numPages, 3);
+  const canvases = [];
+  for (let i = 1; i <= pages; i++) {
+    const page = await pdf.getPage(i);
+    const v1 = page.getViewport({ scale: 1 });
+    const vp = page.getViewport({ scale: 1100 / v1.width });
+    const c = document.createElement('canvas'); c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+    const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+    // 'print' mode renders in one go (does not wait for screen frames)
+    await page.render({ canvasContext: ctx, viewport: vp, intent: 'print' }).promise;
+    canvases.push(c);
+  }
+  const w = Math.max(...canvases.map((c) => c.width)), h = canvases.reduce((a, c) => a + c.height, 0);
+  const s = Math.min(1, 2400 / h);
+  const out = document.createElement('canvas'); out.width = Math.round(w * s); out.height = Math.round(h * s);
+  const ctx = out.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, out.width, out.height);
+  let y = 0; canvases.forEach((c) => { ctx.drawImage(c, 0, y, c.width * s, c.height * s); y += c.height * s; });
+  let q = 0.8, data = out.toDataURL('image/jpeg', q);
+  while (data.length > 900 * 1024 && q > 0.4) { q -= 0.1; data = out.toDataURL('image/jpeg', q); }
+  return { data, type: 'image', name: file.name.replace(/\.pdf$/i, '') + '.jpg' };
+}
+
+/** Payment receipt -> { data, type, name }. Images are shrunk; large PDFs are turned into an image. */
 export function readReceipt(file) {
   return new Promise((res, rej) => {
     const isImg = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'].includes(file.type);
     const isPdf = file.type === 'application/pdf';
     if (!isImg && !isPdf) return rej(new Error('Receipt must be a photo/screenshot (JPG, PNG) or a PDF.'));
-    if (isPdf && file.size > 600 * 1024) return rej(new Error('PDF receipt is too large (max 600 KB). Please upload a screenshot or photo instead.'));
+    if (isPdf && file.size > 600 * 1024) return pdfToImage(file).then(res, () => rej(new Error('Could not read that PDF. Please upload a screenshot or photo of the receipt instead.')));
     const fr = new FileReader();
     fr.onerror = () => rej(new Error('Could not read that file'));
     fr.onload = () => {
@@ -203,15 +250,44 @@ export function toast(msg, type = 'info') {
   setTimeout(() => t.remove(), 4300);
 }
 
-export function modal(html, { wide = false } = {}) {
+// While any popup is open, the page behind it must not scroll.
+const syncScrollLock = () => document.documentElement.classList.toggle('modal-open', !!document.querySelector('.modal-backdrop'));
+let lockWatch;
+
+/**
+ * Popup window.
+ *  backdropClose: false -> clicking outside does NOT close it; only the ✕ button
+ *  (or a [data-close] button inside) closes it. Used for payment popups.
+ */
+export function modal(html, { wide = false, backdropClose = true } = {}) {
   const wrap = document.createElement('div');
   wrap.className = 'modal-backdrop';
   wrap.innerHTML = `<div class="modal ${wide ? 'modal-wide' : ''}" role="dialog" aria-modal="true">
-    <button class="modal-x" aria-label="Close">&times;</button>${html}</div>`;
-  const close = () => wrap.remove();
-  wrap.addEventListener('click', (e) => { if (e.target === wrap || e.target.classList.contains('modal-x') || e.target.dataset.close !== undefined) close(); });
+    <button type="button" class="modal-x" aria-label="Close" title="Close">✕</button>${html}</div>`;
+  const box = wrap.querySelector('.modal');
+  const close = () => { wrap.remove(); syncScrollLock(); };
+  wrap.addEventListener('click', (e) => {
+    if (e.target.closest('.modal-x') || e.target.closest('[data-close]')) return close();
+    if (e.target === wrap) {
+      if (backdropClose) return close();
+      box.classList.remove('nudge'); void box.offsetWidth; box.classList.add('nudge');   // hint: use ✕ to close
+    }
+  });
+  // stop mouse-wheel / touch scrolling from reaching the page behind the popup
+  wrap.addEventListener('wheel', (e) => { if (!box.contains(e.target)) e.preventDefault(); }, { passive: false });
+  wrap.addEventListener('touchmove', (e) => { if (!box.contains(e.target)) e.preventDefault(); }, { passive: false });
   document.body.appendChild(wrap);
-  return { el: wrap.querySelector('.modal'), close };
+  syncScrollLock();
+  if (!lockWatch) { lockWatch = new MutationObserver(syncScrollLock); lockWatch.observe(document.body, { childList: true }); }
+  return { el: box, close };
+}
+
+/** One file only, up to `maxMB`. Returns an error message, or '' when OK. */
+export function checkUpload(files, maxMB) {
+  if (!files || !files.length) return '';
+  if (files.length > 1) return 'Please upload only one file at a time.';
+  if (files[0].size > maxMB * 1024 * 1024) return `File is too large. Maximum size is ${maxMB} MB.`;
+  return '';
 }
 
 export const STATUS_TEXT = {

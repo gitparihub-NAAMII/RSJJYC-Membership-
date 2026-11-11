@@ -4,7 +4,7 @@ import { initPage, cardData } from './common.js';
 import { mountCard, downloadButtons, wireDownloads, verifyUrl } from './card.js';
 import { renderProfileForm } from './profile.js';
 import { nextDue, reminderText, syncReminders, enableNotifications, notifyState, downloadCalendar } from './reminders.js';
-import { buildLedger, cardStatus, esc, npr, fmtDate, modal, toast, monthKey, addMonths, addYears, STATUS_TEXT, readReceipt, showReceipt } from './utils.js';
+import { buildLedger, cardStatus, esc, npr, fmtDate, modal, toast, monthKey, addMonths, addYears, STATUS_TEXT, readReceipt, showReceipt, checkUpload } from './utils.js';
 
 const store = await initPage();
 const app = document.getElementById('app');
@@ -216,11 +216,11 @@ function payDialog() {
     </div>
     <label class="receipt-drop" id="rcDrop">
       <div class="rc-pv" id="rcPv">🧾</div>
-      <div><b>Upload receipt</b> <span class="req">*</span><br><span class="hint">Screenshot or photo (JPG/PNG) or a small PDF. The payment is completed only after the receipt is uploaded.</span></div>
+      <div><b>Upload receipt</b> <span class="req">*</span><br><span class="hint">PDF, PNG or JPG, up to 10 MB, one file only. The payment is completed only after the receipt is uploaded.</span></div>
       <input type="file" id="rcFile" accept="image/png,image/jpeg,application/pdf">
     </label>
     <div class="err" id="payErr"></div>
-    <button class="btn btn-green btn-block" id="paySubmit" disabled>Upload receipt &amp; complete payment</button>`, { wide: true });
+    <button class="btn btn-green btn-block" id="paySubmit" disabled>Upload receipt &amp; complete payment</button>`, { wide: true, backdropClose: false });
 
   if (!PAYMENT.qrImage && window.QRCode) {
     new window.QRCode(el.querySelector('#payQr'), { text: new URL('pay-soon.html', ORG.siteUrl || location.href).href, width: 150, height: 150, correctLevel: window.QRCode.CorrectLevel.M });
@@ -232,10 +232,12 @@ function payDialog() {
   };
   let receipt = null;
   const fileIn = el.querySelector('#rcFile'), drop = el.querySelector('#rcDrop'), pv = el.querySelector('#rcPv');
-  const take = async (file) => {
+  const take = async (files) => {
+    const bad = checkUpload(files, PAYMENT.maxReceiptMB);
+    if (bad) { el.querySelector('#payErr').textContent = bad; fileIn.value = ''; return; }
+    const file = files && files[0];
     if (!file) return;
     el.querySelector('#payErr').textContent = '';
-    if (file.size > PAYMENT.maxReceiptMB * 1024 * 1024) { el.querySelector('#payErr').textContent = `Receipt must be smaller than ${PAYMENT.maxReceiptMB} MB.`; return; }
     try {
       receipt = await readReceipt(file);
       pv.style.backgroundImage = receipt.type === 'image' ? `url(${receipt.data})` : '';
@@ -245,10 +247,10 @@ function payDialog() {
     } catch (e) { receipt = null; el.querySelector('#payErr').textContent = e.message; }
     upd();
   };
-  fileIn.addEventListener('change', () => take(fileIn.files[0]));
+  fileIn.addEventListener('change', () => take(fileIn.files));
   ['dragover', 'dragenter'].forEach((e) => drop.addEventListener(e, (ev) => { ev.preventDefault(); drop.classList.add('drag'); }));
   ['dragleave', 'drop'].forEach((e) => drop.addEventListener(e, () => drop.classList.remove('drag')));
-  drop.addEventListener('drop', (ev) => { ev.preventDefault(); take(ev.dataTransfer.files[0]); });
+  drop.addEventListener('drop', (ev) => { ev.preventDefault(); take(ev.dataTransfer.files); });
   el.addEventListener('change', (e) => { if (e.target.type === 'checkbox') upd(); });
   upd();
 

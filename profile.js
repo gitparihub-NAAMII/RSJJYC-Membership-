@@ -6,7 +6,7 @@ import { PROFESSIONS, DONATION_TIERS, PROVINCES, RULES, MEMBER_TYPES, BLOOD_GROU
 import { friendlyError } from './store.js';
 import { cardData } from './common.js';
 import { createDobPicker } from './datepicker.js';
-import { ageOn, addYears, monthKey, uid, compressImage, esc, npr, toast } from './utils.js';
+import { ageOn, addYears, monthKey, uid, compressImage, esc, npr, toast, checkUpload } from './utils.js';
 import { openPaymentPopup } from './payui.js';
 
 export function renderProfileForm(root, store, sess, onDone) {
@@ -64,7 +64,7 @@ export function renderProfileForm(root, store, sess, onDone) {
         <legend><span class="n">4</span> Photo</legend>
         <label class="photo-drop" id="photoDrop">
           <div class="pv" id="photoPv">📷</div>
-          <div><b>Upload a passport-size photo</b> <span class="req">*</span><br><span class="hint">PNG or JPG, up to 5 MB. Face clearly visible — this photo is printed on your membership card.</span></div>
+          <div><b>Upload a passport-size photo</b> <span class="req">*</span><br><span class="hint">PNG or JPG, up to 10 MB, one photo only. Face clearly visible — this photo is printed on your membership card.</span></div>
           <input type="file" id="photo" accept="image/png,image/jpeg">
         </label>
       </fieldset>
@@ -173,19 +173,22 @@ export function renderProfileForm(root, store, sess, onDone) {
   // photo
   let photoData = '';
   const photoIn = $('#photo'), drop = $('#photoDrop');
-  async function takePhoto(file) {
+  async function takePhoto(files) {
+    const bad = checkUpload(files, RULES.maxPhotoMB);
+    if (bad) { photoIn.value = ''; return toast(bad, 'error'); }
+    const file = files && files[0];
     if (!file) return;
     if (!['image/png', 'image/jpeg'].includes(file.type)) return toast('Photo must be PNG or JPG', 'error');
-    if (file.size > RULES.maxPhotoMB * 1024 * 1024) return toast(`Photo must be smaller than ${RULES.maxPhotoMB} MB`, 'error');
+
     try {
       photoData = await compressImage(file);
       $('#photoPv').style.backgroundImage = `url(${photoData})`; $('#photoPv').textContent = '';
     } catch { toast('Could not read that image', 'error'); }
   }
-  photoIn.addEventListener('change', () => takePhoto(photoIn.files[0]));
+  photoIn.addEventListener('change', () => takePhoto(photoIn.files));
   ['dragover', 'dragenter'].forEach((e) => drop.addEventListener(e, (ev) => { ev.preventDefault(); drop.classList.add('drag'); }));
   ['dragleave', 'drop'].forEach((e) => drop.addEventListener(e, () => drop.classList.remove('drag')));
-  drop.addEventListener('drop', (ev) => { ev.preventDefault(); takePhoto(ev.dataTransfer.files[0]); });
+  drop.addEventListener('drop', (ev) => { ev.preventDefault(); takePhoto(ev.dataTransfer.files); });
 
   // submit
   form.addEventListener('submit', async (e) => {

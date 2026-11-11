@@ -607,3 +607,57 @@ a.app-choice, a.app-choice:hover { color: #fff; }
 .app-mode .app-logo { width: 150px; height: 150px; margin-bottom: 30px; }
 .app-mode .app-choice { padding: 18px 16px; }
 .app-mode .app-choice b { font-size: 18px; }
+
+/* v9: popups — page behind does not scroll, clear ✕ close button */
+html.modal-open, html.modal-open body { overflow: hidden !important; overscroll-behavior: none; }
+.modal-backdrop { overscroll-behavior: contain; }
+.modal { overscroll-behavior: contain; }
+.modal-x { position: sticky; top: 0; float: right; z-index: 5; margin: -8px -8px 6px 10px; width: 40px; height: 40px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 18px; font-weight: 700; line-height: 1; color: var(--text); background: var(--surface-2);
+  border: 1.5px solid var(--line); box-shadow: 0 2px 8px rgba(0,0,0,.12); cursor: pointer; transition: background .15s, transform .15s; }
+.modal-x:hover { background: var(--red-bg); color: var(--red); border-color: var(--red-bd); transform: rotate(90deg); }
+.modal.nudge { animation: nudge .35s ease; }
+.modal.nudge .modal-x { background: var(--red-bg); color: var(--red); border-color: var(--red); }
+@keyframes nudge { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-7px); } 75% { transform: translateX(7px); } }
+
+/* keep the page from shifting sideways when a popup hides the scrollbar */
+html { scrollbar-gutter: stable; }
+
+/* =====================================================================
+   v10: everything fits any screen width (phones, tablets, foldables)
+   Grid/flex children may shrink; wide tables scroll inside their own box.
+   ===================================================================== */
+.dash > *, .charts > *, .stats > *, .grid > *, .filters > *, .months > *, .actions > *, .wrap > *, .panel, .modal, .req-card, .kv > * { min-width: 0; }
+.kv dd, .req-card p, .hint, .mo, .stat small, .banner b, .gs-item small { overflow-wrap: anywhere; }
+.tbl-wrap { max-width: 100%; -webkit-overflow-scrolling: touch; }
+.tbl-wrap table.t { min-width: 640px; }
+.tbl-wrap::after { content: ''; display: block; }
+.chart-box { min-width: 0; width: 100%; }
+img, video, canvas, iframe { max-width: 100%; }
+
+/* app-like feel on phones and in the installed app */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
+button, .btn, .app-choice, .tabs button, .chips button, .side-nav button, .stat.click { touch-action: manipulation; }
+@media (max-width: 680px) {
+  .wrap { padding-left: 12px; padding-right: 12px; }
+  .panel { padding: 16px 14px; border-radius: 16px; }
+  .dash { gap: 14px; }
+  .panel + .panel { margin-top: 14px; }
+  .tbl-wrap { border-radius: 10px; margin: 0 -2px; }
+  .tbl-wrap table.t { font-size: 13.5px; }
+  .dl-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .dl-row .btn { padding: 9px 4px; font-size: 13px; min-width: 0; }
+  .banner { padding: 12px 14px; gap: 10px; }
+  .banner b { font-size: 15px; }
+  h2 { font-size: 21px; }
+  .remind-row { flex-direction: column; align-items: stretch; }
+  .remind-row .btn { width: 100%; }
+}
+/* installed app: native-looking top bar on dashboards */
+@media (display-mode: standalone) {
+  .topbar .in { padding-top: 8px; padding-bottom: 8px; }
+  .wrap { padding-bottom: calc(40px + env(safe-area-inset-bottom)); }
+  footer.site { display: none; }
+}
+@media (max-width: 1000px) { .charts { grid-template-columns: 1fr !important; } }

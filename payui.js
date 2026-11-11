@@ -3,7 +3,7 @@
 //  contribution in the membership form).
 // ============================================================================
 import { ORG, PAYMENT, PAYMENT_METHODS } from './config.js';
-import { esc, npr, modal, readReceipt } from './utils.js';
+import { esc, npr, modal, readReceipt, checkUpload } from './utils.js';
 
 /**
  * Opens the popup. Resolves with { receipt, method, ref } when the member
@@ -33,21 +33,23 @@ export function openPaymentPopup({ amount, title = 'Pay your first month' }) {
       </div>
       <label class="receipt-drop" id="ppDrop">
         <div class="rc-pv" id="ppPv">🧾</div>
-        <div><b>Upload receipt</b> <span class="req">*</span><br><span class="hint">PDF, PNG or JPG. You can continue only after the receipt is uploaded.</span></div>
+        <div><b>Upload receipt</b> <span class="req">*</span><br><span class="hint">PDF, PNG or JPG, up to 10 MB, one file only. You can continue only after the receipt is uploaded.</span></div>
         <input type="file" id="ppFile" accept="application/pdf,image/png,image/jpeg">
       </label>
       <div class="err" id="ppErr"></div>
-      <button class="btn btn-green btn-block" id="ppOk" disabled>Confirm payment</button>`, { wide: true });
+      <button class="btn btn-green btn-block" id="ppOk" disabled>Confirm payment</button>`, { wide: true, backdropClose: false });
 
     if (!PAYMENT.qrImage && window.QRCode) {
       new window.QRCode(el.querySelector('#ppQr'), { text: new URL('pay-soon.html', ORG.siteUrl || location.href).href, width: 150, height: 150, correctLevel: window.QRCode.CorrectLevel.M });
     }
     let receipt = null;
     const drop = el.querySelector('#ppDrop'), pv = el.querySelector('#ppPv'), err = el.querySelector('#ppErr'), ok = el.querySelector('#ppOk');
-    const take = async (file) => {
+    const take = async (files) => {
+      const bad = checkUpload(files, PAYMENT.maxReceiptMB);
+      if (bad) { err.textContent = bad; el.querySelector('#ppFile').value = ''; return; }
+      const file = files && files[0];
       if (!file) return;
       err.textContent = '';
-      if (file.size > PAYMENT.maxReceiptMB * 1024 * 1024) { err.textContent = `Receipt must be smaller than ${PAYMENT.maxReceiptMB} MB.`; return; }
       try {
         receipt = await readReceipt(file);
         pv.style.backgroundImage = receipt.type === 'image' ? `url(${receipt.data})` : '';
@@ -57,10 +59,10 @@ export function openPaymentPopup({ amount, title = 'Pay your first month' }) {
       } catch (e) { receipt = null; err.textContent = e.message; }
       ok.disabled = !receipt;
     };
-    el.querySelector('#ppFile').addEventListener('change', (e) => take(e.target.files[0]));
+    el.querySelector('#ppFile').addEventListener('change', (e) => take(e.target.files));
     ['dragover', 'dragenter'].forEach((t) => drop.addEventListener(t, (ev) => { ev.preventDefault(); drop.classList.add('drag'); }));
     ['dragleave', 'drop'].forEach((t) => drop.addEventListener(t, () => drop.classList.remove('drag')));
-    drop.addEventListener('drop', (ev) => { ev.preventDefault(); take(ev.dataTransfer.files[0]); });
+    drop.addEventListener('drop', (ev) => { ev.preventDefault(); take(ev.dataTransfer.files); });
 
     ok.onclick = () => {
       if (!receipt) { err.textContent = 'Please upload your payment receipt.'; return; }
