@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Royal Star Jan Jyoti Youth Club — Membership</title>
+  <meta name="description" content="Become a member of Royal Star Jan Jyoti Youth Club (Estd. 1979) and get your digital membership card.">
+  <script>try{var d=document.documentElement,t=localStorage.getItem('theme');d.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');if(localStorage.getItem('lang')==='ne'){d.lang='ne';d.classList.add('i18n-pending');setTimeout(function(){d.classList.remove('i18n-pending')},2500)}}catch(e){}</script>
+  <link rel="icon" href="assets/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Mukta:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/nepali-date-converter@3.3.4/dist/nepali-date-converter.umd.js"></script>
+</head>
+<body>
+  <div class="topbar"><div class="in">
+    <a class="brand" href="index.html"><img src="assets/logo.png" alt="" class="org-logo"><div><b class="org-short">RSJJYC</b><small class="org-full">Royal Star Jan Jyoti Youth Club</small></div></a>
+    <span class="sp"></span>
+    <span id="modePill" class="demo-pill" hidden>DEMO MODE</span>
+    <a id="continueBtn" class="btn btn-sm btn-ghost" href="member.html" hidden>My dashboard →</a>
+  </div></div>
+
+  <section class="hero">
+    <img class="hero-logo org-logo" src="assets/logo.png" alt="">
+    <div class="in">
+      <div>
+        <span class="estd">★ Estd. 1979</span>
+        <h1>Be part of the change.</h1>
+        <p class="lead">Join a greater youth community that has been serving society since 1979.</p>
+        <p class="hook" id="hook">Be part of a greater youth community serving since 1979.</p>
+        <div class="cta">
+          <a class="btn btn-gold btn-lg" href="#register" data-go="register">Become a member</a>
+          <a class="btn btn-ghost btn-lg" href="#login" data-go="login">I'm already a member</a>
+        </div>
+        <div class="hero-stats">
+          <div><b>1979</b>Serving since</div>
+          <div><b id="yrs">47+</b>years of service</div>
+          <div><b>1 year</b>membership validity</div>
+          <div><b>QR</b>verified digital card</div>
+        </div>
+        <p class="small">Register in minutes, choose your monthly contribution and get your digital membership card — download it as PNG, JPG, PDF or print it.</p>
+      </div>
+      <div class="hero-card" id="heroCard"></div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <nav class="tabs" role="tablist" id="tabs">
+      <button class="on" data-tab="register" role="tab">📝 New Member Register</button>
+      <button data-tab="login" role="tab">👤 Member Log In</button>
+      <button data-tab="admin" role="tab">🛡️ Admin Log In</button>
+    </nav>
+
+    <!-- ===================== REGISTER ===================== -->
+    <section id="tab-register" class="panel">
+      <h2>New Member Registration</h2>
+      <p class="sub">Fields marked * are required. Your membership number is generated automatically.</p>
+      <form id="regForm" novalidate>
+        <fieldset>
+          <legend><span class="n">1</span> Personal details</legend>
+          <div class="grid g3">
+            <label class="f">First name <span class="req">*</span><input name="firstName" required autocomplete="given-name"></label>
+            <label class="f">Middle name<input name="middleName" autocomplete="additional-name"></label>
+            <label class="f">Surname <span class="req">*</span><input name="lastName" required autocomplete="family-name"></label>
+          </div>
+          <div class="grid g2" style="margin-top:14px">
+            <div class="f"><label class="f">Date of birth <span class="req">*</span></label><div id="dobPicker"></div></div>
+            <div class="f"><label class="f">Age (as of application date)</label><div class="age-box" id="ageBox"><small>Select your date of birth</small></div></div>
+          </div>
+          <div class="grid g3" style="margin-top:14px">
+            <label class="f">Gender
+              <select name="gender"><option value="">Select</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option><option value="Prefer not to say">Prefer not to say</option></select>
+            </label>
+            <label class="f">Mobile number <span class="req">*</span><input name="phone" inputmode="tel" placeholder="98XXXXXXXX" required autocomplete="tel"></label>
+            <label class="f">E-mail<input name="email" type="email" placeholder="you@example.com" autocomplete="email"></label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend><span class="n">2</span> Profession</legend>
+          <div class="grid g2">
+            <label class="f">What is your profession? <span class="req">*</span><select name="profession" id="profession" required></select></label>
+            <label class="f" id="otherProfWrap" hidden>Please specify<input name="professionOther"></label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend><span class="n">3</span> Address</legend>
+          <h3 style="font-size:14px;margin:0 0 10px">Permanent address</h3>
+          <div class="grid g4" data-addr="permanent"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:18px 0 10px;gap:10px;flex-wrap:wrap">
+            <h3 style="font-size:14px;margin:0">Temporary address</h3>
+            <label class="check"><input type="checkbox" id="sameAddr"> Same as permanent address</label>
+          </div>
+          <div class="grid g4" data-addr="temporary"></div>
+        </fieldset>
+
+        <fieldset>
+          <legend><span class="n">4</span> Photo</legend>
+          <label class="photo-drop" id="photoDrop">
+            <div class="pv" id="photoPv">📷</div>
+            <div><b>Upload a passport-size photo</b> <span class="req">*</span><br><span class="hint">PNG or JPG, up to 5 MB. Face clearly visible — this photo is printed on your membership card.</span></div>
+            <input type="file" id="photo" accept="image/png,image/jpeg">
+          </label>
+        </fieldset>
+
+        <fieldset>
+          <legend><span class="n">5</span> Login credentials</legend>
+          <div class="seg" id="userTypeSeg">
+            <label><input type="radio" name="userType" value="phone" checked><span>Use mobile number</span></label>
+            <label><input type="radio" name="userType" value="email"><span>Use e-mail</span></label>
+          </div>
+          <div class="grid g3">
+            <label class="f">Username<input id="usernamePreview" readonly placeholder="Filled from your mobile / e-mail"></label>
+            <label class="f">Password <span class="req">*</span><input type="password" name="password" minlength="6" required autocomplete="new-password"><div class="pw-meter"><i id="pwBar"></i></div></label>
+            <label class="f">Confirm password <span class="req">*</span><input type="password" name="password2" required autocomplete="new-password"></label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend><span class="n">6</span> Monthly contribution</legend>
+          <p class="hint" id="tierHint" style="margin-top:0">Choose your profession first to see the contribution options.</p>
+          <div class="tiers" id="tiers"></div>
+        </fieldset>
+
+        <label class="check" style="margin-bottom:16px"><input type="checkbox" id="agree" required> I confirm the information above is correct and agree to contribute monthly to keep my membership active.</label>
+        <div class="err" id="regErr"></div>
+        <button class="btn btn-primary btn-block" id="regBtn" type="submit">Register &amp; generate my membership card</button>
+      </form>
+    </section>
+
+    <!-- ===================== MEMBER LOGIN ===================== -->
+    <section id="tab-login" class="panel narrow" hidden>
+      <h2>Member Log In</h2>
+      <p class="sub">Use the mobile number or e-mail and the password you created at registration.</p>
+      <form id="loginForm" class="grid">
+        <label class="f">Username (mobile or e-mail)<input name="username" required autocomplete="username"></label>
+        <label class="f">Password<input type="password" name="password" required autocomplete="current-password"></label>
+        <div class="err" id="loginErr"></div>
+        <button class="btn btn-primary btn-block" type="submit">Log in</button>
+      </form>
+    </section>
+
+    <!-- ===================== ADMIN LOGIN ===================== -->
+    <section id="tab-admin" class="panel narrow" hidden>
+      <h2>Admin Log In</h2>
+      <p class="sub">Restricted to club administrators.</p>
+      <form id="adminForm" class="grid">
+        <label class="f">Admin username<input name="username" required autocomplete="username"></label>
+        <label class="f">Password<input type="password" name="password" required autocomplete="current-password"></label>
+        <div class="err" id="adminErr"></div>
+        <button class="btn btn-block" type="submit">Log in as admin</button>
+      </form>
+    </section>
+  </div>
+  <footer class="site">© <span class="org-full">Royal Star Jan Jyoti Youth Club</span> · Estd. 1979</footer>
+  <script type="module" src="js/home.js"></script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Membership</title>
+  <script>try{var d=document.documentElement,t=localStorage.getItem('theme');d.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');if(localStorage.getItem('lang')==='ne'){d.lang='ne';d.classList.add('i18n-pending');setTimeout(function(){d.classList.remove('i18n-pending')},2500)}}catch(e){}</script>
+  <link rel="icon" href="assets/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Mukta:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <div class="topbar"><div class="in">
+    <a class="brand" href="index.html"><img src="assets/logo.png" alt="" class="org-logo"><div><b class="org-short">RSJJYC</b><small class="org-full">Royal Star Jan Jyoti Youth Club</small></div></a>
+    <span class="sp"></span>
+    <span id="modePill" class="demo-pill" hidden>DEMO MODE</span>
+    <button id="logout" class="btn btn-sm btn-ghost">Log out</button>
+  </div></div>
+  <main class="wrap" id="app"><div class="spinner"></div></main>
+  <footer class="site">© <span class="org-full">Royal Star Jan Jyoti Youth Club</span> · Estd. 1979</footer>
+  <script type="module" src="js/member.js"></script>
+</body>
+</html>

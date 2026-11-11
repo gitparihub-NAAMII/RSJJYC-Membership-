@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Card Verification</title>
+  <meta name="robots" content="noindex">
+  <script>try{var d=document.documentElement,t=localStorage.getItem('theme');d.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');if(localStorage.getItem('lang')==='ne'){d.lang='ne';d.classList.add('i18n-pending');setTimeout(function(){d.classList.remove('i18n-pending')},2500)}}catch(e){}</script>
+  <link rel="icon" href="assets/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Mukta:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+  <div class="topbar"><div class="in">
+    <a class="brand" href="index.html"><img src="assets/logo.png" alt="" class="org-logo"><div><b class="org-short">RSJJYC</b><small class="org-full">Royal Star Jan Jyoti Youth Club</small></div></a>
+    <span class="sp"></span><span id="modePill" class="demo-pill" hidden>DEMO MODE</span>
+  </div></div>
+  <main class="wrap verify" id="app"><div class="spinner"></div></main>
+  <footer class="site">© <span class="org-full">Royal Star Jan Jyoti Youth Club</span> · Estd. 1979</footer>
+  <script type="module">
+    import { initPage } from './js/common.js';
+    import { mountCard } from './js/card.js';
+    import { cardStatus, esc, fmtDate } from './js/utils.js';
+    const store = await initPage();
+    const app = document.getElementById('app');
+    const token = new URLSearchParams(location.search).get('id');
+    const card = token && token !== 'sample' ? await store.getPublicCard(token).catch(() => null) : null;
+    if (!card) {
+      app.innerHTML = `<div class="panel empty"><h2>❌ Card not found</h2><p>This QR code does not match any membership card of our club.</p></div>`;
+    } else {
+      const st = cardStatus(card);
+      const msg = st.code === 'expired' ? 'YOUR CARD IS EXPIRED — RENEW SOON' : st.code === 'expiring' ? 'MEMBERSHIP ABOUT TO EXPIRE' : 'MEMBERSHIP ACTIVE';
+      app.innerHTML = `
+        <div class="big-status ${st.code}">${st.code === 'active' ? '✅' : st.code === 'expiring' ? '⚠️' : '⛔'} <span>${msg}</span><small><span>${esc(st.reason)}</span> · <span>valid until</span> <span>${fmtDate(card.expiryMs)}</span></small></div>
+        <div id="card" class="${st.code === 'expired' ? 'flash-red' : ''}"></div>
+        <p class="hint" style="text-align:center;margin-top:16px">Verified ${new Date().toLocaleString('en-GB')}</p>`;
+      mountCard(app.querySelector('#card'), { ...card, cardToken: token });
+    }
+  </script>
+</body>
+</html>

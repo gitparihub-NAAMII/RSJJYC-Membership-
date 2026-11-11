@@ -1,0 +1,60 @@
+rules_version = '2';
+// Firestore security rules for the RSJJYC membership platform.
+// Deploy with:  firebase deploy --only firestore:rules
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isAdmin() { return signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
+    function onlyKeys(keys) { return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys); }
+    // a renewal may push expiry at most ~14 months ahead of today
+    function renewalOk() { return request.resource.data.expiryMs <= request.time.toMillis() + 430 * 86400000; }
+
+    // admins/{uid} documents are created by hand in the Firebase console
+    match /admins/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // membership-number sequence per year (can only ever go up by one)
+    match /counters/{year} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.count == 1;
+      allow update: if signedIn() && request.resource.data.count == resource.data.count + 1;
+    }
+
+    match /members/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.uid == uid
+        && request.resource.data.memberType == 'General Member'
+        && request.resource.data.paidThrough == null;
+      allow update: if isAdmin()
+        || (signedIn() && request.auth.uid == uid && onlyKeys(['expiryMs', 'periods', 'renewals']) && renewalOk());
+      allow delete: if isAdmin();
+    }
+
+    // Public QR card: anyone with the (unguessable) token can read ONE card; nobody can list them.
+    match /publicCards/{token} {
+      allow get: if true;
+      allow list: if isAdmin();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid
+        && request.resource.data.memberType == 'General Member'
+        && request.resource.data.paidThrough == null;
+      allow update: if isAdmin()
+        || (signedIn() && resource.data.uid == request.auth.uid && onlyKeys(['expiryMs', 'periods']) && renewalOk());
+      allow delete: if isAdmin();
+    }
+
+    match /payments/{id} {
+      allow read: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.status == 'pending';
+      allow update, delete: if isAdmin();
+    }
+
+    match /waivers/{id} {
+      allow read: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.status == 'pending';
+      allow update, delete: if isAdmin();
+    }
+  }
+}
