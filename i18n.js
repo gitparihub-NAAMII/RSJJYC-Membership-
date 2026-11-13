@@ -399,6 +399,7 @@ const NE = {
   'No account found with this mobile number / e-mail.': 'यो मोबाइल नम्बर / इमेलको कुनै खाता भेटिएन।',
   'Enter your mobile number or e-mail.': 'मोबाइल नम्बर वा इमेल लेख्नुहोस्।',
   'Forgot password?': 'पासवर्ड बिर्सनुभयो?',
+  'You can use Forgot password again in {n} minute(s).': '"पासवर्ड बिर्सनुभयो" फेरि {n} मिनेटपछि प्रयोग गर्न सक्नुहुन्छ।',
   'Reset your password': 'पासवर्ड रिसेट गर्नुहोस्',
   'Enter the e-mail or mobile number you use to log in.': 'लग इन गर्न प्रयोग गर्ने इमेल वा मोबाइल नम्बर लेख्नुहोस्।',
   'Demo mode: set a new password here (on the live site a reset link is e-mailed instead).': 'डेमो मोड: यहीँ नयाँ पासवर्ड राख्नुहोस् (वास्तविक साइटमा इमेलमा रिसेट लिङ्क पठाइन्छ)।',

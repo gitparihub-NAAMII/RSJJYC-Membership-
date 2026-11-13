@@ -133,6 +133,12 @@ $('#loginForm').addEventListener('submit', async (e) => {
 });
 
 // ---------- forgot password ----------
+// one reset per user every 15 minutes (counted from the last successful reset request)
+const FP_WAIT = 15 * 60 * 1000;
+const fpKey = (u) => 'rsjjyc_fp_' + normalizeUsername(u);
+const fpLeft = (u) => { try { const t = Number(localStorage.getItem(fpKey(u)) || 0); return Math.max(0, t + FP_WAIT - Date.now()); } catch { return 0; } };
+const fpMark = (u) => { try { localStorage.setItem(fpKey(u), String(Date.now())); } catch {} };
+const fpWaitMsg = (ms) => `You can use Forgot password again in ${Math.ceil(ms / 60000)} minute(s).`;
 $('#forgotLink').addEventListener('click', (e) => {
   e.preventDefault();
   const { el, close } = modal(`
@@ -153,10 +159,12 @@ $('#forgotLink').addEventListener('click', (e) => {
     err.textContent = '';
     const u = el.querySelector('#fpUser').value;
     const ue = usernameError(u); if (ue) { err.textContent = ue; return; }
+    if (!demoReady && fpLeft(u)) { err.textContent = fpWaitMsg(fpLeft(u)); return; }
     try {
       if (demoReady) {
         if (!ux.valid()) { err.textContent = 'Passwords do not match.'; return; }
         await store.demoSetPassword(u, el.querySelector('#fpPw').value);
+        fpMark(u);
         close(); toast('Password changed. You can log in now.', 'success'); return;
       }
       const r = await store.resetPassword(u);
@@ -164,6 +172,7 @@ $('#forgotLink').addEventListener('click', (e) => {
         demoReady = true; el.querySelector('#fpDemo').hidden = false; btn.textContent = 'Save new password';
         addEyeButtons(el); ux = attachPasswordUX(el.querySelector('#fpPw'), el.querySelector('#fpPw2'));
       } else {
+        fpMark(u);
         ok.hidden = false; ok.textContent = '✔ Reset link sent. Check your e-mail inbox (and the spam folder), open the link and choose a new password.';
         btn.hidden = true;
       }
